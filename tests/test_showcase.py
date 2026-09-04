@@ -46,7 +46,7 @@ def parse_page() -> ShowcaseParser:
 
 def png_dimensions(path: Path) -> tuple[int, int]:
     content = path.read_bytes()
-    if content[:8] != b"\x89PNG\r\n\x1a\n" or content[12:16] != b"IHDR":
+    if len(content) < 24 or content[:8] != b"\x89PNG\r\n\x1a\n" or content[12:16] != b"IHDR":
         raise AssertionError(f"Not a valid PNG: {path}")
     return struct.unpack(">II", content[16:24])
 
@@ -62,6 +62,15 @@ def contrast_ratio(foreground: str, background: str) -> float:
 
 
 class ShowcaseContractTests(unittest.TestCase):
+    def test_png_validator_rejects_truncated_files_with_clear_assertion(self) -> None:
+        truncated = ROOT / "tests" / "truncated.png"
+        truncated.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR\x00\x00\x00\x01")
+        try:
+            with self.assertRaisesRegex(AssertionError, "Not a valid PNG"):
+                png_dimensions(truncated)
+        finally:
+            truncated.unlink(missing_ok=True)
+
     def test_has_exact_guided_six_step_sequence(self) -> None:
         parser = parse_page()
         self.assertEqual(parser.section_ids, EXPECTED_STEPS)
