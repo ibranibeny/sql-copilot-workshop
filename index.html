@@ -460,7 +460,9 @@
       if ($repositoryCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid commit SHA.' }
       git clone https://github.com/ibranibeny/mcp-sql-query-store-workshop.git
       Set-Location ./mcp-sql-query-store-workshop
-      git fetch origin $repositoryCommit
+      git fetch origin --prune
+      git cat-file -e "$repositoryCommit^{commit}"
+      if ($LASTEXITCODE -ne 0) { throw 'Reviewed commit is not available locally.' }
       git checkout --detach $repositoryCommit
       if ((git rev-parse HEAD).Trim() -cne $repositoryCommit) { throw 'Commit pin failed.' }</code></pre></div></div>
         <div class="deploy-step"><b>2</b><div><h3>Install local validation dependencies</h3><p>The repository test path is local and creates no Azure resources.</p><pre><code>python -m venv .venv

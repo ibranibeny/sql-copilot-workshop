@@ -104,6 +104,8 @@ class ShowcaseContractTests(unittest.TestCase):
         page = read_page()
         for token in (
             "git clone https://github.com/ibranibeny/mcp-sql-query-store-workshop.git",
+            "git fetch origin --prune",
+            'git cat-file -e "$repositoryCommit^{commit}"',
             "git checkout --detach $repositoryCommit",
             "Connect-AzAccount -Tenant $tenantId -Subscription $subscriptionId",
             "Test-WorkshopPrerequisites.ps1",
@@ -117,6 +119,7 @@ class ShowcaseContractTests(unittest.TestCase):
             "8,000,000",
         ):
             self.assertIn(token, page)
+        self.assertNotIn("git fetch origin $repositoryCommit", page)
 
     def test_architecture_is_inline_accessible_and_has_no_runtime_dependency(self) -> None:
         parser = parse_page()
