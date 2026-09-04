@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A guided six-step workshop for GitHub Copilot in SSMS, AI schema exploration, SQL query optimization, deployment, architecture, and a live SSMS demonstration.">
-  <title>GitHub Copilot + SQL MCP Workshop</title>
+  <title>GitHub Copilot in SSMS Workshop</title>
   <script>
   (() => {
     const param = new URLSearchParams(window.location.search).get("scoutTheme");
@@ -330,7 +330,7 @@
   .arch-node { fill: var(--cp-surface); stroke: var(--cp-border-strong); stroke-width: 2; }
   .arch-node-public { fill: var(--cp-highlight); stroke: var(--cp-danger); }
   .arch-node-admin { fill: var(--cp-accent-soft); stroke: var(--cp-accent); }
-  .arch-node-mcp { fill: var(--cp-surface-soft); stroke: var(--cp-link); }
+  .arch-node-copilot { fill: var(--cp-surface-soft); stroke: var(--cp-link); }
   .arch-node-sql { fill: var(--cp-surface-soft); stroke: var(--cp-success); }
   .arch-node-data { fill: var(--cp-surface); stroke: var(--cp-warning); }
   .arch-label {
@@ -375,7 +375,7 @@
   }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   @media (forced-colors: active) {
-    .arch-node, .arch-node-public, .arch-node-admin, .arch-node-mcp, .arch-node-sql, .arch-node-data { fill: Canvas; stroke: CanvasText; }
+    .arch-node, .arch-node-public, .arch-node-admin, .arch-node-copilot, .arch-node-sql, .arch-node-data { fill: Canvas; stroke: CanvasText; }
   }
   @media print {
     .step-rail, .hero-actions { display: none; }
@@ -389,9 +389,9 @@
   <header class="hero">
     <div class="wrap hero-grid">
       <div>
-        <p class="eyebrow">Six-step guided workshop · GitHub Copilot + SQL MCP</p>
-        <h1>Explore the schema. Optimize with evidence.</h1>
-        <p class="hero-lede">Learn how GitHub Copilot in SQL Server Management Studio helps a DBA understand an unfamiliar database, investigate an expensive query, and produce a safer optimization—grounded in Microsoft SQL MCP and Query Store evidence.</p>
+        <p class="eyebrow">Six-step guided workshop · SSMS + GitHub Copilot</p>
+        <h1>Explore the schema. Optimize in SSMS.</h1>
+        <p class="hero-lede">Learn how GitHub Copilot in SQL Server Management Studio helps a DBA understand an unfamiliar database, investigate an expensive query, and produce a safer optimization—grounded in actual execution plans and Query Store evidence.</p>
         <div class="hero-actions">
           <a class="button button-primary" href="#overview">Start Step 01</a>
           <a class="button button-secondary" href="https://github.com/ibranibeny/mcp-sql-query-store-workshop">Open source repository</a>
@@ -423,7 +423,7 @@
           <article class="card"><span class="status-chip">Build</span><h3>Draft and refine code</h3><p>Generate T-SQL, document intent, refactor a query, and review the proposed change as a diff.</p></article>
           <article class="card"><span class="status-chip">Agent</span><h3>Work through goals</h3><p>Agent mode can select tools and iterate through a task, but it never receives permissions beyond the connected identity.</p></article>
         </div>
-        <div class="note"><strong>Evidence rule:</strong> Copilot output is a hypothesis, not proof. Query Store, execution plans, bounded MCP diagnostics, and result-equivalence tests decide whether a change is safe.</div>
+        <div class="note"><strong>Evidence rule:</strong> Copilot output is a hypothesis, not proof. Query Store, actual execution plans, SSMS result comparison, and result-equivalence tests decide whether a change is safe.</div>
       </section>
       <section id="ssms" class="chapter" data-step="02">
         <header class="chapter-header"><div class="chapter-badge">02</div><div><p class="step-kicker">Work where the database lives</p><h2>GitHub Copilot in SSMS</h2><p class="chapter-intro">Microsoft documents GitHub Copilot as an AI assistant in SSMS 22 or later. Install the AI Assistance workload, connect a query editor to the database, open the Copilot badge, and sign in with a GitHub account that has Copilot access.</p></div></header>
@@ -446,12 +446,12 @@
         <div class="story-flow" aria-label="Use-case sequence">
           <div class="story-stage"><b>Explore</b><span>Ask Copilot how many tables exist, what <code>Sales.Store</code> represents, and how key entities relate.</span></div>
           <div class="story-stage"><b>Inspect</b><span>Read <code>lab.FactSales</code> and <code>lab.usp_MonthEndSalesBaseline</code>; attach the query or plan as context.</span></div>
-          <div class="story-stage"><b>Measure</b><span>Use Query Store and six bounded SQL MCP diagnostics for runtime, waits, plans, and memory-grant evidence.</span></div>
+          <div class="story-stage"><b>Measure</b><span>Use Query Store reports and actual execution plans for runtime, waits, plan shape, and memory-grant evidence.</span></div>
           <div class="story-stage"><b>Prove</b><span>Build one candidate beside the baseline, verify result equivalence, run frozen A/B trials, and decide.</span></div>
         </div>
         <div class="grid grid-2">
           <article class="card"><span class="status-chip">Schema exploration</span><h3>From catalog to business meaning</h3><p>Copilot can summarize objects and relationships, but the active login controls what it can inspect. In the workshop, schema exploration is connected to AdventureWorks2022 and reviewed by the DBA.</p></article>
-          <article class="card"><span class="status-chip">Query optimization</span><h3>From symptom to verified change</h3><p>Query Store narrows attention to top resource consumers and wait categories. MCP returns described, bounded evidence; Copilot turns that evidence into ranked hypotheses and candidate changes.</p></article>
+          <article class="card"><span class="status-chip">Query optimization</span><h3>From symptom to verified change</h3><p>Query Store narrows attention to top resource consumers and wait categories. SSMS exposes the actual plan; Copilot turns that evidence into ranked hypotheses and candidate changes.</p></article>
         </div>
       </section>
       <section id="deploy" class="chapter" data-step="04">
@@ -559,24 +559,24 @@ INCLUDE (CustomerID, ProductID, OrderQty, UnitPrice, SalesAmount);
         <div class="note"><strong>Target, not a result:</strong> the workshop aims to move regular query-workspace grant utilization from a 75–85% baseline band toward a 35–45% optimized band. Record the actual measured result even when it misses the target.</div>
       </section>
       <section id="architecture" class="chapter" data-step="05">
-        <header class="chapter-header"><div class="chapter-badge">05</div><div><p class="step-kicker">Follow the trust boundary</p><h2>Architecture demo</h2><p class="chapter-intro">The facilitator reaches one public administration endpoint. SQL Server remains private. GitHub Copilot and the local DAB SQL MCP process operate from the admin VM over encrypted private TDS.</p></div></header>
+        <header class="chapter-header"><div class="chapter-badge">05</div><div><p class="step-kicker">Follow the trust boundary</p><h2>Architecture demo</h2><p class="chapter-intro">The facilitator reaches one public administration endpoint. SQL Server remains private. SSMS and GitHub Copilot run on the admin VM and connect to SQL Server over encrypted private TDS.</p></div></header>
         <figure class="architecture-frame" tabindex="0" aria-label="Scrollable colored architecture diagram">
           <svg viewBox="0 0 1120 390" role="img" aria-labelledby="architecture-title architecture-desc">
-            <title id="architecture-title">MCP SQL workshop two-tier architecture</title>
-            <desc id="architecture-desc">The facilitator connects by restricted RDP to a Windows 11 administration VM. VS Code and SSMS host GitHub Copilot and call the local DAB SQL MCP server. The MCP server connects over encrypted private TDS as the least-privilege workshop reader to SQL Server 2022. Query Store persists plans, runtime statistics, and wait statistics. The SQL VM has no public IP.</desc>
+            <title id="architecture-title">SSMS and GitHub Copilot workshop architecture</title>
+            <desc id="architecture-desc">The facilitator connects by restricted RDP to a Windows 11 administration VM. SQL Server Management Studio hosts GitHub Copilot, including Chat, Agent mode, skills, and optional MCP servers. SSMS connects over encrypted private TDS to SQL Server 2022. Query Store persists plans, runtime statistics, and wait statistics. The SQL VM has no public IP.</desc>
             <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path class="arch-arrow" d="M0,0 L0,6 L9,3 z"></path></marker></defs>
             <path class="arch-edge" d="M175 95 L230 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M390 95 L445 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M665 95 L720 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M880 95 L935 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M555 145 L555 250" marker-end="url(#arrow)"></path><path class="arch-edge" d="M800 135 L800 250" marker-end="url(#arrow)"></path><path class="arch-edge" d="M1015 145 L1015 250" marker-end="url(#arrow)"></path>
-            <text class="arch-edge-label" x="202" y="82">RDP 3389 · /32</text><text class="arch-edge-label" x="692" y="82">tools/list · tools/call</text><text class="arch-edge-label" x="907" y="82">TLS TDS 1433</text>
+            <text class="arch-edge-label" x="202" y="82">RDP 3389 · /32</text><text class="arch-edge-label" x="692" y="82">active database context</text><text class="arch-edge-label" x="907" y="82">TLS TDS 1433</text>
             <rect class="arch-node arch-node-public" x="25" y="55" width="150" height="80" rx="10"></rect><text class="arch-label" x="100" y="89">Facilitator</text><text class="arch-small" x="100" y="109">approved public /32</text>
             <rect class="arch-node arch-node-public" x="230" y="55" width="160" height="80" rx="10"></rect><text class="arch-label" x="310" y="89">Admin public IP</text><text class="arch-small" x="310" y="109">RDP only</text>
-            <rect class="arch-node arch-node-admin" x="445" y="45" width="220" height="100" rx="10"></rect><text class="arch-label" x="555" y="78">Windows 11 admin VM</text><text class="arch-small" x="555" y="99">VS Code · SSMS · Copilot</text><text class="arch-small" x="555" y="117">10.20.1.0/24</text>
-            <rect class="arch-node arch-node-mcp" x="720" y="55" width="160" height="80" rx="10"></rect><text class="arch-label" x="800" y="89">DAB SQL MCP</text><text class="arch-small" x="800" y="109">10 bounded tools</text>
+            <rect class="arch-node arch-node-admin" x="445" y="45" width="220" height="100" rx="10"></rect><text class="arch-label" x="555" y="78">Windows 11 admin VM</text><text class="arch-small" x="555" y="99">private administration tier</text><text class="arch-small" x="555" y="117">10.20.1.0/24</text>
+            <rect class="arch-node arch-node-copilot" x="720" y="55" width="160" height="80" rx="10"></rect><text class="arch-label" x="800" y="89">SSMS + GitHub Copilot</text><text class="arch-small" x="800" y="109">Chat · Agent · Skills · MCP</text>
             <rect class="arch-node arch-node-sql" x="935" y="45" width="160" height="100" rx="10"></rect><text class="arch-label" x="1015" y="77">SQL 2022 VM</text><text class="arch-small" x="1015" y="98">10.20.2.10</text><text class="arch-small" x="1015" y="116">no public IP</text>
             <rect class="arch-node" x="445" y="250" width="220" height="80" rx="10"></rect><text class="arch-label" x="555" y="284">NAT Gateway</text><text class="arch-small" x="555" y="304">outbound only</text>
             <rect class="arch-node arch-node-data" x="720" y="250" width="160" height="80" rx="10"></rect><text class="arch-label" x="800" y="284">Reader identity</text><text class="arch-small" x="800" y="304">SELECT + EXECUTE only</text>
             <rect class="arch-node arch-node-data" x="935" y="250" width="160" height="80" rx="10"></rect><text class="arch-label" x="1015" y="284">Query Store</text><text class="arch-small" x="1015" y="304">plans · runtime · waits</text>
           </svg>
-          <figcaption>Colored trust-boundary view: public ingress uses the alert treatment, administration uses the accent treatment, MCP uses link blue, private SQL uses success green, and evidence stores use warning gold.</figcaption>
+          <figcaption>Colored trust-boundary view: public ingress uses the alert treatment, administration uses the accent treatment, SSMS + GitHub Copilot uses link blue, private SQL uses success green, and Query Store evidence uses warning gold.</figcaption>
         </figure>
       </section>
       <section id="demo" class="chapter" data-step="06">
@@ -601,10 +601,10 @@ INCLUDE (CustomerID, ProductID, OrderQty, UnitPrice, SalesAmount);
     <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/overview">What is GitHub Copilot in SSMS?</a></li>
     <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/chat">Use GitHub Copilot Chat in SSMS</a></li>
     <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/mcp-servers">Use MCP servers with GitHub Copilot in SSMS</a></li>
-    <li><a href="https://learn.microsoft.com/en-us/azure/data-api-builder/mcp/overview">Microsoft SQL MCP server overview</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/code-completions">Code completions and Next Edit Suggestions in SSMS</a></li>
     <li><a href="https://learn.microsoft.com/en-us/sql/relational-databases/performance/monitoring-performance-by-using-the-query-store">Monitor performance with Query Store</a></li>
   </ul></div></aside>
-  <footer><div class="wrap">GitHub Copilot proposes. Query Store and SQL MCP measure. The DBA decides. Never run the workshop workload against production.</div></footer>
+  <footer><div class="wrap">GitHub Copilot proposes in SSMS. Execution plans and Query Store measure. The DBA decides. Never run the workshop workload against production.</div></footer>
   <script>
   (() => {
     const sections = [...document.querySelectorAll("section.chapter")];
