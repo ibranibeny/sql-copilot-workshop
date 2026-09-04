@@ -225,10 +225,15 @@ class ShowcaseContractTests(unittest.TestCase):
             "touch site/.nojekyll",
             "actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d",
             "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9",
-            "actions/deploy-pages@cd2ce8fcbc39b97be5cfe6e763baed58fa128",
+            "actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346",
             "path: site",
         ):
             self.assertIn(token, workflow)
+        build_job = workflow.split("  build:", 1)[1].split("  deploy:", 1)[0]
+        self.assertIn("permissions:\n      contents: read\n      pages: read\n      id-token: write", build_job)
+        action_pins = re.findall(r"uses:\s+[\w-]+/[\w-]+@([^\s]+)", workflow)
+        self.assertTrue(action_pins)
+        self.assertTrue(all(re.fullmatch(r"[0-9a-f]{40}", pin) for pin in action_pins))
         self.assertNotIn("actions/jekyll-build-pages", workflow.lower())
 
 
