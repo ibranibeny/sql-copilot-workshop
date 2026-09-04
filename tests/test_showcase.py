@@ -229,7 +229,10 @@ class ShowcaseContractTests(unittest.TestCase):
             "path: site",
         ):
             self.assertIn(token, workflow)
-        build_job = workflow.split("  build:", 1)[1].split("  deploy:", 1)[0]
+        _, build_marker, after_build = workflow.partition("  build:")
+        build_job, deploy_marker, _ = after_build.partition("  deploy:")
+        self.assertTrue(build_marker, "Pages workflow is missing the build job")
+        self.assertTrue(deploy_marker, "Pages workflow is missing the deploy job")
         self.assertIn("permissions:\n      contents: read\n      pages: read\n      id-token: write", build_job)
         action_pins = re.findall(r"uses:\s+[\w-]+/[\w-]+@([^\s]+)", workflow)
         self.assertTrue(action_pins)
