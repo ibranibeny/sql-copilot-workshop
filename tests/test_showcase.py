@@ -3,6 +3,7 @@ from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
 import re
+import struct
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +44,13 @@ def parse_page() -> ShowcaseParser:
     return parser
 
 
+def png_dimensions(path: Path) -> tuple[int, int]:
+    content = path.read_bytes()
+    if content[:8] != b"\x89PNG\r\n\x1a\n" or content[12:16] != b"IHDR":
+        raise AssertionError(f"Not a valid PNG: {path}")
+    return struct.unpack(">II", content[16:24])
+
+
 class ShowcaseContractTests(unittest.TestCase):
     def test_has_exact_guided_six_step_sequence(self) -> None:
         parser = parse_page()
@@ -64,26 +72,38 @@ class ShowcaseContractTests(unittest.TestCase):
         parser = parse_page()
         by_src = {image.get("src", ""): image for image in parser.images}
         expected = {
-            "assets/copilot-ssms-get-started.png": "Microsoft Learn page showing how to get started with GitHub Copilot in SSMS",
+            "assets/copilot-ssms-workflow.svg": "Original visual guide to starting GitHub Copilot in SSMS",
             "assets/ssms-copilot-schema-exploration.png": "GitHub Copilot in SSMS reviewing the Sales.Store schema",
         }
         for src, alt in expected.items():
             self.assertIn(src, by_src)
             self.assertEqual(by_src[src].get("alt"), alt)
             self.assertTrue((ROOT / src).is_file())
-        self.assertIn("Image source: Microsoft", read_page())
-        self.assertIn("Workshop screenshot: GitHub Copilot in SSMS", read_page())
+        page = read_page()
+        self.assertIn("Original workshop illustration based on", page)
+        self.assertIn("Microsoft Learn guidance", page)
+        self.assertIn("discovered through WebIQ", page)
+        self.assertIn("Workshop screenshot: GitHub Copilot in SSMS", page)
+        self.assertFalse((ROOT / "assets/copilot-ssms-get-started.png").exists())
+        self.assertEqual(png_dimensions(ROOT / "assets/ssms-copilot-schema-exploration.png"), (1914, 877))
+        workflow_svg = (ROOT / "assets/copilot-ssms-workflow.svg").read_text(encoding="utf-8")
+        self.assertIn("<svg", workflow_svg)
+        self.assertIn("GitHub Copilot in SSMS", workflow_svg)
 
     def test_deployment_chapter_is_complete_and_includes_nonoptimized_sql(self) -> None:
         page = read_page()
         for token in (
             "git clone https://github.com/ibranibeny/mcp-sql-query-store-workshop.git",
+            "git checkout --detach $repositoryCommit",
+            "Connect-AzAccount -Tenant $tenantId -Subscription $subscriptionId",
             "Test-WorkshopPrerequisites.ps1",
             "Deploy-WorkshopEnvironment.ps1",
             "DEPLOY rg-mcp-sql-workshop",
-            "YEAR(fs.OrderDate)",
-            "MONTH(fs.OrderDate)",
-            "DROP INDEX IX_FactSales_OrderDate_Territory ON lab.FactSales",
+            "CONVERT(date, fs.OrderDate)",
+            "INCLUDE (CustomerID, ProductID, OrderQty, UnitPrice, SalesAmount)",
+            "Approve-WorkshopCandidate.ps1",
+            "APPROVE AdventureWorks2022 candidate",
+            "DELETE rg-mcp-sql-workshop",
             "8,000,000",
         ):
             self.assertIn(token, page)
@@ -99,6 +119,8 @@ class ShowcaseContractTests(unittest.TestCase):
         page = read_page()
         self.assertIn("architecture-title", page)
         self.assertIn("architecture-desc", page)
+        self.assertIn('class="architecture-frame" tabindex="0"', page)
+        self.assertIn('aria-label="Scrollable colored architecture diagram"', page)
         self.assertNotIn("cdn.jsdelivr.net", page)
         self.assertNotIn("mermaid.esm", page)
 
@@ -118,6 +140,18 @@ class ShowcaseContractTests(unittest.TestCase):
         without_vars = re.sub(r"--cp-[\w-]+\s*:\s*[^;]+;", "", page)
         self.assertIsNone(re.search(r"#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(", without_vars))
 
+    def test_unsupported_theme_query_is_clamped_after_mandatory_detector(self) -> None:
+        page = read_page()
+        self.assertIn('if (theme === "light" || theme === "dark") return;', page)
+        self.assertIn('document.documentElement.setAttribute("data-theme", fallback);', page)
+
+    def test_step_rail_tracks_all_section_intersection_ratios(self) -> None:
+        page = read_page()
+        self.assertIn("const ratios = new Map(sections.map", page)
+        self.assertIn("ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0)", page)
+        self.assertIn("sections.reduce((best, section)", page)
+        self.assertNotIn("entries.filter((entry) => entry.isIntersecting).sort", page)
+
     def test_guided_rail_is_sticky_responsive_and_accessible(self) -> None:
         page = read_page()
         self.assertIn("position: sticky", page)
@@ -135,7 +169,7 @@ class ShowcaseContractTests(unittest.TestCase):
 
     def test_links_only_to_expected_first_party_and_repository_hosts(self) -> None:
         hosts = set(re.findall(r'https://([^/"\s]+)', read_page()))
-        self.assertEqual(hosts, {"github.com", "learn.microsoft.com", "www.microsoft.com"})
+        self.assertEqual(hosts, {"github.com", "learn.microsoft.com"})
 
 
 if __name__ == "__main__":

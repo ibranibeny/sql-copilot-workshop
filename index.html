@@ -13,6 +13,14 @@
     document.documentElement.setAttribute("data-theme", theme);
   })();
   </script>
+  <script>
+  (() => {
+    const theme = document.documentElement.getAttribute("data-theme");
+    if (theme === "light" || theme === "dark") return;
+    const fallback = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", fallback);
+  })();
+  </script>
   <style>
   :root {
     color-scheme: light;
@@ -419,8 +427,8 @@
       <section id="ssms" class="chapter" data-step="02">
         <header class="chapter-header"><div class="chapter-badge">02</div><div><p class="step-kicker">Work where the database lives</p><h2>GitHub Copilot in SSMS</h2><p class="chapter-intro">Microsoft documents GitHub Copilot as an AI assistant in SSMS 22 or later. Install the AI Assistance workload, connect a query editor to the database, open the Copilot badge, and sign in with a GitHub account that has Copilot access.</p></div></header>
         <figure class="media-frame">
-          <img src="assets/copilot-ssms-get-started.png" alt="Microsoft Learn page showing how to get started with GitHub Copilot in SSMS" width="1500" height="900" loading="lazy">
-          <figcaption>Image source: Microsoft — <a href="https://www.microsoft.com/en-us/thesource-developer/Event/401/get-started-with-github-copilot-in-sql-server-management-studio">Get started with GitHub Copilot in SQL Server Management Studio</a>, discovered through WebIQ.</figcaption>
+          <img src="assets/copilot-ssms-workflow.svg" alt="Original visual guide to starting GitHub Copilot in SSMS" width="1500" height="900" loading="lazy">
+          <figcaption>Original workshop illustration based on <a href="https://learn.microsoft.com/en-us/ssms/github-copilot/get-started">Microsoft Learn guidance</a> discovered through WebIQ. It is not a redistributed Microsoft screenshot.</figcaption>
         </figure>
         <ul class="feature-list">
           <li><strong>Chat and inline chat</strong><span>Ask general SQL questions or questions grounded in the active editor and database connection.</span></li>
@@ -447,9 +455,13 @@
       </section>
       <section id="deploy" class="chapter" data-step="04">
         <header class="chapter-header"><div class="chapter-badge">04</div><div><p class="step-kicker">Build the disposable lab</p><h2>Deploy the workshop step by step</h2><p class="chapter-intro">Run these steps from PowerShell 7.4 or later. Deployment is billable and phrase-gated. Never place secrets in source control, terminal screenshots, or chat.</p></div></header>
-        <div class="deploy-step"><b>1</b><div><h3>Clone and pin the repository</h3><p>Use the exact commit you reviewed so both VM bootstrap records bind to immutable source.</p><pre><code>git clone https://github.com/ibranibeny/mcp-sql-query-store-workshop.git
-Set-Location ./mcp-sql-query-store-workshop
-$repositoryCommit = (git rev-parse HEAD).Trim()</code></pre></div></div>
+        <div class="deploy-step"><b>1</b><div><h3>Clone and pin the reviewed commit</h3><p>Paste the exact 40-character commit SHA that was reviewed; do not treat the repository’s current <code>HEAD</code> as approval.</p><pre><code>$repositoryCommit = Read-Host 'Reviewed 40-character commit SHA'
+      if ($repositoryCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid commit SHA.' }
+      git clone https://github.com/ibranibeny/mcp-sql-query-store-workshop.git
+      Set-Location ./mcp-sql-query-store-workshop
+      git fetch origin $repositoryCommit
+      git checkout --detach $repositoryCommit
+      if ((git rev-parse HEAD).Trim() -cne $repositoryCommit) { throw 'Commit pin failed.' }</code></pre></div></div>
         <div class="deploy-step"><b>2</b><div><h3>Install local validation dependencies</h3><p>The repository test path is local and creates no Azure resources.</p><pre><code>python -m venv .venv
 ./build/Install-DevDependencies.ps1 -AllowPublicPackageIndex -AllowPowerShellGallery
 ./build/Test-Repository.ps1 -RequirePSScriptAnalyzer</code></pre></div></div>
@@ -460,7 +472,13 @@ $expiresOn = (Get-Date).Date.AddDays(5)
 $repositoryUrl = 'https://github.com/ibranibeny/mcp-sql-query-store-workshop'
 $credential = Get-Credential -UserName 'workshopadmin'
 $databaseMasterKeyPassword = Read-Host 'Database master key password' -AsSecureString
-$mcpReaderPassword = Read-Host 'MCP reader password' -AsSecureString</code></pre></div></div>
+$mcpReaderPassword = Read-Host 'MCP reader password' -AsSecureString
+
+Connect-AzAccount -Tenant $tenantId -Subscription $subscriptionId
+$context = Set-AzContext -Tenant $tenantId -Subscription $subscriptionId
+if ($context.Subscription.Id -cne $subscriptionId -or $context.Tenant.Id -cne $tenantId) {
+  throw 'Azure context verification failed.'
+}</code></pre></div></div>
         <div class="deploy-step"><b>4</b><div><h3>Run the non-destructive preflight</h3><p>Stop if any context, provider, quota, SKU, image, licensing, CIDR, or expiration check fails.</p><pre><code>./deploy/Test-WorkshopPrerequisites.ps1 `
   -SubscriptionId $subscriptionId `
   -TenantId $tenantId `
@@ -482,35 +500,64 @@ $mcpReaderPassword = Read-Host 'MCP reader password' -AsSecureString</code></pre
   -ApproveBillableDeployment `
   -ConfirmationPhrase 'DEPLOY rg-mcp-sql-workshop'</code></pre></div></div>
         <div class="deploy-step"><b>6</b><div><h3>Accept only positive readiness</h3><p>Proceed only when network boundary, VM boundary, SQL bootstrap, admin bootstrap, and end-to-end readiness all pass. Then RDP to the admin VM and connect SSMS with Windows Authentication as <code>workshopadmin</code>.</p></div></div>
-        <span class="code-label">The deliberately non-optimized query shape</span>
-        <pre class="sql-bad"><code>SELECT fs.TerritoryID,
-       SUM(fs.SalesAmount) AS TotalSales,
-       COUNT_BIG(*) AS OrderCount
-FROM lab.FactSales AS fs
-WHERE YEAR(fs.OrderDate) = 2013
-  AND MONTH(fs.OrderDate) = 6
-GROUP BY fs.TerritoryID;</code></pre>
-        <p>The function-wrapped date column is non-SARGable. With 8,000,000 workshop rows and no supporting date index, SQL Server scans rather than seeks. The baseline also carries an unused <code>char(400)</code> payload through intermediate work, increasing its query-workspace memory grant.</p>
-        <span class="code-label">Candidate optimization—prove equivalence before adoption</span>
-        <pre class="sql-good"><code>SELECT fs.TerritoryID,
-       SUM(fs.SalesAmount) AS TotalSales,
-       COUNT_BIG(*) AS OrderCount
-FROM lab.FactSales AS fs
-WHERE fs.OrderDate &gt;= '2013-06-01'
-  AND fs.OrderDate &lt;  '2013-07-01'
-GROUP BY fs.TerritoryID;
+        <span class="code-label">Faithful excerpt from the deliberately non-optimized baseline</span>
+        <pre class="sql-bad"><code>DECLARE @WideWork table
+(
+  SyntheticSalesID bigint NOT NULL,
+  TerritoryID int NULL,
+  CustomerID int NOT NULL,
+  ProductID int NOT NULL,
+  OrderQty smallint NOT NULL,
+  SalesAmount decimal(19,4) NOT NULL,
+  WidePayload char(400) NOT NULL
+);
 
-CREATE NONCLUSTERED INDEX IX_FactSales_OrderDate_Territory
+INSERT @WideWork
+SELECT fs.SyntheticSalesID, fs.TerritoryID, fs.CustomerID,
+       fs.ProductID, fs.OrderQty, fs.SalesAmount, fs.WidePayload
+FROM lab.FactSales AS fs
+WHERE CONVERT(date, fs.OrderDate) &gt;= @StartDate
+  AND CONVERT(date, fs.OrderDate) &lt; @EndDateExclusive;
+
+-- The baseline later reads lab.FactSales a second time for price statistics.</code></pre>
+        <p>The baseline in <code>sql/04-CreateBaselineProcedure.sql</code> wraps <code>OrderDate</code> in <code>CONVERT(date, …)</code>, materializes the unused <code>char(400)</code> payload, aggregates late, and reads the fact table again. With 8,000,000 workshop rows and no candidate index, this increases scans and query-workspace memory.</p>
+        <span class="code-label">Faithful candidate excerpt—review it, but do not run script 06 directly</span>
+        <pre class="sql-good"><code>CREATE INDEX IX_FactSales_OrderDate_Territory
 ON lab.FactSales (OrderDate, TerritoryID)
-INCLUDE (SalesAmount);
+INCLUDE (CustomerID, ProductID, OrderQty, UnitPrice, SalesAmount);
 
--- Rollback
-DROP INDEX IX_FactSales_OrderDate_Territory ON lab.FactSales;</code></pre>
+;WITH Aggregated AS
+(
+  SELECT fs.TerritoryID, fs.CustomerID, fs.ProductID,
+         COUNT_BIG(*) AS OrderCount,
+         CONVERT(bigint, SUM(CONVERT(bigint, fs.OrderQty))) AS TotalQuantity,
+         CONVERT(decimal(38,4), SUM(CONVERT(decimal(38,4), fs.SalesAmount))) AS TotalSales
+  FROM lab.FactSales AS fs
+  WHERE fs.OrderDate &gt;= @StartDate
+    AND fs.OrderDate &lt; @EndDateExclusive
+    AND (@TerritoryID IS NULL OR fs.TerritoryID = @TerritoryID)
+  GROUP BY fs.TerritoryID, fs.CustomerID, fs.ProductID
+)
+-- The full candidate preserves AverageUnitPrice, ranking, output metadata and ordering.</code></pre>
+        <span class="code-label">Apply only through the guarded approval and equivalence gate</span>
+        <pre><code>$candidateDba = Get-Credential -Message 'DBA credential for approved candidate creation'
+./deploy/Approve-WorkshopCandidate.ps1 `
+  -Credential $candidateDba `
+  -ServerInstance 'sql01.mcpworkshop.internal' `
+  -ExpectedServerName 'sql01.mcpworkshop.internal' `
+  -ExpectedDatabaseName 'AdventureWorks2022' `
+  -ConfirmationPhrase 'APPROVE AdventureWorks2022 candidate'</code></pre>
+        <p>If candidate creation or equivalence validation fails, the approval entry point performs fingerprint-verified compensating cleanup of <code>lab.usp_MonthEndSalesOptimized</code> and <code>IX_FactSales_OrderDate_Territory</code>. It refuses cleanup if ownership cannot be proven. The supported full-lab rollback is phrase-gated:</p>
+        <pre><code>./deploy/Remove-WorkshopEnvironment.ps1 `
+  -SubscriptionId $subscriptionId `
+  -TenantId $tenantId `
+  -ConfirmationPhrase 'DELETE rg-mcp-sql-workshop' `
+  -Confirm:$false</code></pre>
         <div class="note"><strong>Target, not a result:</strong> the workshop aims to move regular query-workspace grant utilization from a 75–85% baseline band toward a 35–45% optimized band. Record the actual measured result even when it misses the target.</div>
       </section>
       <section id="architecture" class="chapter" data-step="05">
         <header class="chapter-header"><div class="chapter-badge">05</div><div><p class="step-kicker">Follow the trust boundary</p><h2>Architecture demo</h2><p class="chapter-intro">The facilitator reaches one public administration endpoint. SQL Server remains private. GitHub Copilot and the local DAB SQL MCP process operate from the admin VM over encrypted private TDS.</p></div></header>
-        <figure class="architecture-frame">
+        <figure class="architecture-frame" tabindex="0" aria-label="Scrollable colored architecture diagram">
           <svg viewBox="0 0 1120 390" role="img" aria-labelledby="architecture-title architecture-desc">
             <title id="architecture-title">MCP SQL workshop two-tier architecture</title>
             <desc id="architecture-desc">The facilitator connects by restricted RDP to a Windows 11 administration VM. VS Code and SSMS host GitHub Copilot and call the local DAB SQL MCP server. The MCP server connects over encrypted private TDS as the least-privilege workshop reader to SQL Server 2022. Query Store persists plans, runtime statistics, and wait statistics. The SQL VM has no public IP.</desc>
@@ -560,11 +607,14 @@ DROP INDEX IX_FactSales_OrderDate_Territory ON lab.FactSales;</code></pre>
     const sections = [...document.querySelectorAll("section.chapter")];
     const links = [...document.querySelectorAll(".step-link")];
     if (!("IntersectionObserver" in window)) return;
+    const ratios = new Map(sections.map((section) => [section.id, 0]));
     const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!visible) return;
+      entries.forEach((entry) => ratios.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0));
+      const visible = sections.reduce((best, section) =>
+        ratios.get(section.id) > ratios.get(best.id) ? section : best, sections[0]);
+      if (!visible || ratios.get(visible.id) === 0) return;
       links.forEach((link) => {
-        const active = link.getAttribute("href") === `#${visible.target.id}`;
+        const active = link.getAttribute("href") === `#${visible.id}`;
         if (active) link.setAttribute("aria-current", "step");
         else link.removeAttribute("aria-current");
       });
