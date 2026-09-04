@@ -51,6 +51,16 @@ def png_dimensions(path: Path) -> tuple[int, int]:
     return struct.unpack(">II", content[16:24])
 
 
+def contrast_ratio(foreground: str, background: str) -> float:
+    def luminance(value: str) -> float:
+        channels = [int(value[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+        linear = [channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4 for channel in channels]
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+    lighter, darker = sorted((luminance(foreground), luminance(background)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
 class ShowcaseContractTests(unittest.TestCase):
     def test_has_exact_guided_six_step_sequence(self) -> None:
         parser = parse_page()
@@ -144,6 +154,22 @@ class ShowcaseContractTests(unittest.TestCase):
         page = read_page()
         self.assertIn('if (theme === "light" || theme === "dark") return;', page)
         self.assertIn('document.documentElement.setAttribute("data-theme", fallback);', page)
+
+    def test_secondary_copy_and_focus_meet_wcag_contrast(self) -> None:
+        page = read_page()
+        self.assertNotIn("color: var(--cp-text-muted)", page)
+        self.assertIn(":focus-visible { outline: 3px solid var(--cp-accent)", page)
+        for foreground, background, minimum in (
+            ("#6f6f6f", "#f7f4ef", 4.5),
+            ("#6f6f6f", "#ffffff", 4.5),
+            ("#b0b0b0", "#3d3b3a", 4.5),
+            ("#b0b0b0", "#292929", 4.5),
+            ("#b11f4b", "#f7f4ef", 3.0),
+            ("#b11f4b", "#ffffff", 3.0),
+            ("#fd8ea1", "#3d3b3a", 3.0),
+            ("#fd8ea1", "#292929", 3.0),
+        ):
+            self.assertGreaterEqual(contrast_ratio(foreground, background), minimum)
 
     def test_step_rail_tracks_all_section_intersection_ratios(self) -> None:
         page = read_page()
