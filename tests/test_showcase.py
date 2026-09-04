@@ -62,6 +62,18 @@ def contrast_ratio(foreground: str, background: str) -> float:
 
 
 class ShowcaseContractTests(unittest.TestCase):
+    def test_primary_story_is_ssms_and_github_copilot_not_sql_mcp(self) -> None:
+        page = read_page()
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("<title>GitHub Copilot in SSMS Workshop</title>", page)
+        self.assertIn("Six-step guided workshop · SSMS + GitHub Copilot", page)
+        self.assertIn("execution plans and Query Store evidence", page)
+        self.assertIn("SSMS + GitHub Copilot", page)
+        self.assertIn("MCP servers", page)
+        self.assertNotRegex(page, r"(?i)(?:Microsoft\s+|DAB\s+)?SQL\s+MCP")
+        self.assertIn("# GitHub Copilot in SSMS Workshop", readme)
+        self.assertNotRegex(readme, r"(?i)(?:Microsoft\s+|DAB\s+)?SQL\s+MCP")
+
     def test_png_validator_rejects_truncated_files_with_clear_assertion(self) -> None:
         truncated = ROOT / "tests" / "truncated.png"
         truncated.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR\x00\x00\x00\x01")
