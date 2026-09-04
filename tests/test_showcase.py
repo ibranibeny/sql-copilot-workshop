@@ -214,6 +214,23 @@ class ShowcaseContractTests(unittest.TestCase):
         hosts = set(re.findall(r'https://([^/"\s]+)', read_page()))
         self.assertEqual(hosts, {"github.com", "learn.microsoft.com"})
 
+    def test_pages_workflow_deploys_exact_static_artifact(self) -> None:
+        workflow_path = ROOT / ".github" / "workflows" / "pages.yml"
+        self.assertTrue(workflow_path.is_file())
+        workflow = workflow_path.read_text(encoding="utf-8")
+        for token in (
+            "mkdir -p site/assets",
+            "cp index.html site/index.html",
+            "cp -R assets/. site/assets/",
+            "touch site/.nojekyll",
+            "actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d",
+            "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9",
+            "actions/deploy-pages@cd2ce8fcbc39b97be5cfe6e763baed58fa128",
+            "path: site",
+        ):
+            self.assertIn(token, workflow)
+        self.assertNotIn("actions/jekyll-build-pages", workflow.lower())
+
 
 if __name__ == "__main__":
     unittest.main()
