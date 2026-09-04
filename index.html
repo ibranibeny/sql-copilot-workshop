@@ -1,317 +1,576 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP SQL Query Store Workshop — GitHub Copilot &amp; the Microsoft SQL MCP</title>
-<meta name="description" content="An evidence-first L400 lab: use GitHub Copilot, grounded by the Microsoft SQL MCP server and SQL Server Query Store, to optimize a stored procedure while preserving its result contract.">
-<style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A guided six-step workshop for GitHub Copilot in SSMS, AI schema exploration, SQL query optimization, deployment, architecture, and a live SSMS demonstration.">
+  <title>GitHub Copilot + SQL MCP Workshop</title>
+  <script>
+  (() => {
+    const param = new URLSearchParams(window.location.search).get("scoutTheme");
+    const theme =
+      param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+  </script>
+  <style>
   :root {
-    --bg: #080b11; --panel: #121a25; --panel-2: #0d121b; --soft: #18222f;
-    --line: #223140; --line-2: #3a4f63;
-    --ink: #e7f0f7; --muted: #9db2c4; --dim: #7b94a8;
-    --teal: #35e0d0; --teal-soft: rgba(53, 224, 208, 0.14);
-    --amber: #ffb020; --green: #40d867; --red: #ff5b56; --azure: #4bb4ff;
-    --mono: Consolas, "Cascadia Mono", "SFMono-Regular", ui-monospace, "Courier New", monospace;
-    --sans: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-    --wrap: 74rem;
+    color-scheme: light;
+    --cp-bg: #f7f4ef;
+    --cp-bg-elevated: #fcfbf8;
+    --cp-surface: #ffffff;
+    --cp-surface-soft: #f5f5f5;
+    --cp-border: #dedede;
+    --cp-border-strong: #919191;
+    --cp-text: #242424;
+    --cp-text-muted: #5c5c5c;
+    --cp-text-soft: #6f6f6f;
+    --cp-accent: #b11f4b;
+    --cp-accent-hover: #9a1a41;
+    --cp-accent-soft: rgba(177, 31, 75, 0.08);
+    --cp-accent-fg: #ffffff;
+    --cp-success: #16a34a;
+    --cp-danger: #dc2626;
+    --cp-warning: #f59e0b;
+    --cp-link: #0078d4;
+    --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+    --cp-overlay: rgba(255, 255, 255, 0.8);
+    --cp-panel: rgba(255, 255, 255, 0.86);
+    --cp-panel-strong: rgba(255, 255, 255, 0.96);
+    --cp-sheen: rgba(255, 255, 255, 0.55);
+    --cp-highlight: rgba(177, 31, 75, 0.12);
+  }
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --cp-bg: #3d3b3a;
+    --cp-bg-elevated: #343231;
+    --cp-surface: #292929;
+    --cp-surface-soft: #2e2e2e;
+    --cp-border: #474747;
+    --cp-border-strong: #5f5f5f;
+    --cp-text: #dedede;
+    --cp-text-muted: #919191;
+    --cp-text-soft: #b0b0b0;
+    --cp-accent: #fd8ea1;
+    --cp-accent-hover: #fb7b91;
+    --cp-accent-soft: rgba(253, 142, 161, 0.14);
+    --cp-accent-fg: #1a1a1a;
+    --cp-success: #4ade80;
+    --cp-danger: #f87171;
+    --cp-warning: #fbbf24;
+    --cp-link: #4da6ff;
+    --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+    --cp-overlay: rgba(41, 41, 41, 0.88);
+    --cp-panel: rgba(41, 41, 41, 0.72);
+    --cp-panel-strong: rgba(41, 41, 41, 0.96);
+    --cp-sheen: rgba(255, 255, 255, 0.04);
+    --cp-highlight: rgba(253, 142, 161, 0.12);
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font-family: var(--sans); line-height: 1.65; font-size: 1rem;
-    background-image:
-      radial-gradient(var(--line) 1px, transparent 1px);
-    background-size: 44px 44px; background-position: -22px -22px;
+    margin: 0;
+    min-width: 20rem;
+    background: var(--cp-bg);
+    color: var(--cp-text);
+    font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 1rem;
+    line-height: 1.65;
   }
-  a { color: var(--azure); text-underline-offset: 0.2em; }
-  a:hover { color: var(--teal); }
-  ::selection { background: var(--teal-soft); }
-  .wrap { max-width: var(--wrap); margin-inline: auto; padding-inline: 1.5rem; }
-  .eyebrow {
-    margin: 0; color: var(--teal); font-family: var(--mono);
-    font-size: 0.76rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+  a { color: var(--cp-link); text-underline-offset: 0.2em; }
+  a:hover { color: var(--cp-accent-hover); }
+  code, pre, .eyebrow, .step-number, .step-kicker, .status-chip {
+    font-family: Consolas, "Courier New", Courier, monospace;
   }
-  .chip {
-    display: inline-block; padding: 0.18rem 0.55rem; border: 1px solid var(--line-2);
-    border-radius: 0.4rem; background: var(--soft); color: var(--teal);
-    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+  :focus-visible { outline: 3px solid var(--cp-warning); outline-offset: 4px; }
+  .skip-link {
+    position: fixed;
+    z-index: 100;
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--cp-text);
+    color: var(--cp-bg);
+    transform: translateY(-200%);
   }
-  header.top {
-    border-top: 2px solid var(--teal); border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, var(--panel-2), transparent);
+  .skip-link:focus { transform: translateY(0); }
+  .wrap { width: min(100% - 2.5rem, 76rem); margin-inline: auto; }
+  .hero {
+    border-top: 3px solid var(--cp-accent);
+    border-bottom: 1px solid var(--cp-border);
+    padding-block: clamp(2.5rem, 7vw, 5.5rem);
+    background: var(--cp-bg-elevated);
   }
-  .hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 2.5rem; align-items: center; padding-block: clamp(2.5rem, 7vw, 5rem); }
-  .hero h1 { margin: 0.6rem 0 0.4rem; font-size: clamp(2.1rem, 6vw, 4rem); line-height: 1.02; letter-spacing: -0.03em; font-weight: 680; }
-  .hero p.lede { margin: 0 0 1.5rem; max-width: 40rem; color: var(--muted); font-size: 1.08rem; }
-  .cta { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px;
-    padding: 0.6rem 1.1rem; border-radius: 0.6rem; text-decoration: none; font-weight: 600;
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
+    gap: 3rem;
+    align-items: end;
   }
-  .btn-primary { background: var(--teal); color: #04151a; }
-  .btn-primary:hover { background: #5eeee0; color: #04151a; }
-  .btn-ghost { border: 1px solid var(--line-2); color: var(--ink); }
-  .btn-ghost:hover { border-color: var(--teal); color: var(--teal); }
-  /* Signature: grant-utilization gauge */
-  .gauge { border: 1px solid var(--line); border-radius: 1rem; padding: 1.5rem; background: var(--panel); box-shadow: 0 18px 48px rgba(0,0,0,0.5); }
-  .gauge .label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
-  .gauge svg { display: block; width: 100%; height: auto; }
-  section { padding-block: clamp(2.5rem, 6vw, 4.5rem); border-bottom: 1px solid var(--line); }
-  section h2 { font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: -0.02em; margin: 0.4rem 0 0.75rem; }
-  section p { color: var(--muted); max-width: 52rem; }
-  .grid { display: grid; gap: 1.1rem; margin-top: 1.75rem; }
-  .cols-3 { grid-template-columns: repeat(3, 1fr); }
-  .cols-2 { grid-template-columns: repeat(2, 1fr); }
-  .card { border: 1px solid var(--line); border-radius: 0.9rem; padding: 1.35rem; background: var(--panel); }
-  .card h3 { margin: 0.2rem 0 0.5rem; font-size: 1.1rem; }
-  .card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
-  .card .k { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal); }
-  .signal { display: inline-block; width: 0.6rem; height: 0.6rem; border-radius: 50%; margin-right: 0.4rem; box-shadow: 0 0 8px currentColor; }
-  .s-amber { color: var(--amber); background: var(--amber); }
-  .s-azure { color: var(--azure); background: var(--azure); }
-  .s-green { color: var(--green); background: var(--green); }
-  .flow { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 1.5rem; font-family: var(--mono); font-size: 0.82rem; }
-  .flow .step { border: 1px solid var(--line-2); border-radius: 0.5rem; padding: 0.4rem 0.7rem; background: var(--soft); }
-  .flow .arrow { color: var(--dim); }
-  pre { margin: 1rem 0 0; overflow: auto; border: 1px solid var(--line); border-left: 3px solid var(--teal); border-radius: 0.6rem; padding: 1.1rem 1.25rem; background: var(--panel-2); }
-  code { font-family: var(--mono); font-size: 0.88rem; }
-  pre code { color: #cfe8e4; }
-  .cmt { color: var(--dim); }
-  .kw { color: var(--azure); }
-  .diagram { margin-top: 1.75rem; border: 1px solid var(--line); border-radius: 0.9rem; padding: 1.25rem; background: var(--panel-2); overflow-x: auto; }
-  .diagram svg { display: block; width: 100%; height: auto; min-width: 640px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
-  th, td { border-bottom: 1px solid var(--line); padding: 0.7rem 0.8rem; text-align: left; vertical-align: top; }
-  th { font-family: var(--mono); font-size: 0.76rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--teal); }
-  td { color: var(--muted); font-size: 0.95rem; }
-  td code { color: var(--ink); }
-  ul.tight { margin: 0.75rem 0 0; padding-left: 1.15rem; color: var(--muted); }
-  ul.tight li { margin-bottom: 0.35rem; }
-  footer { padding-block: 2.5rem; color: var(--dim); font-size: 0.9rem; }
-  footer .wrap { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
-  .note { border: 1px solid var(--line); border-left: 4px solid var(--amber); border-radius: 0.6rem; padding: 1rem 1.25rem; margin-top: 1.5rem; color: var(--muted); background: var(--panel); }
+  .eyebrow, .step-kicker {
+    margin: 0;
+    color: var(--cp-accent);
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    max-width: 13ch;
+    margin: 0.65rem 0 0.8rem;
+    font-size: clamp(2.5rem, 7vw, 5.4rem);
+    line-height: 0.95;
+    letter-spacing: -0.055em;
+    font-weight: 680;
+  }
+  .hero-lede {
+    max-width: 48rem;
+    margin: 0;
+    color: var(--cp-text-muted);
+    font-size: clamp(1.02rem, 2vw, 1.22rem);
+  }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.4rem; }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border: 1px solid var(--cp-accent);
+    border-radius: 0.625rem;
+    padding: 0.6rem 1rem;
+    text-decoration: none;
+    font-weight: 650;
+  }
+  .button-primary { background: var(--cp-accent); color: var(--cp-accent-fg); }
+  .button-secondary { background: var(--cp-surface); color: var(--cp-text); }
+  .hero-contract, .card {
+    border: 1px solid var(--cp-border);
+    border-radius: 16px;
+    background: var(--cp-surface);
+    box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
+  }
+  .hero-contract { padding: 1.35rem; }
+  .hero-contract h2 { margin: 0.3rem 0 1rem; font-size: 1.25rem; }
+  .decision-path {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .decision-path li {
+    border-top: 3px solid var(--cp-border);
+    padding-top: 0.55rem;
+    color: var(--cp-text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .decision-path li:nth-child(1) { border-color: var(--cp-warning); }
+  .decision-path li:nth-child(2) { border-color: var(--cp-link); }
+  .decision-path li:nth-child(3) { border-color: var(--cp-success); }
+  .guided-layout {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+  }
+  .step-rail { position: sticky; top: 1rem; padding-block: 2rem; }
+  .step-rail ol { display: grid; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
+  .step-link {
+    display: grid;
+    grid-template-columns: 2rem 1fr;
+    gap: 0.7rem;
+    align-items: center;
+    min-height: 44px;
+    border: 1px solid transparent;
+    border-radius: 0.625rem;
+    padding: 0.55rem;
+    color: var(--cp-text-muted);
+    text-decoration: none;
+  }
+  .step-link:hover, .step-link[aria-current="step"] {
+    border-color: var(--cp-accent);
+    background: var(--cp-accent-soft);
+    color: var(--cp-text);
+  }
+  .step-number { color: var(--cp-accent); font-size: 0.76rem; font-weight: 700; }
+  .step-label { font-size: 0.82rem; font-weight: 650; line-height: 1.25; }
+  .chapters { min-width: 0; }
+  .chapter {
+    scroll-margin-top: 1rem;
+    border-bottom: 1px solid var(--cp-border);
+    padding-block: clamp(3rem, 7vw, 6rem);
+  }
+  .chapter:last-child { border-bottom: 0; }
+  .chapter-header {
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    margin-bottom: 2rem;
+  }
+  .chapter-badge {
+    display: grid;
+    place-items: center;
+    width: 4rem;
+    height: 4rem;
+    border: 1px solid var(--cp-accent);
+    border-radius: 0.625rem;
+    background: var(--cp-accent-soft);
+    color: var(--cp-accent);
+    font-family: Consolas, "Courier New", Courier, monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .chapter h2 {
+    margin: 0.25rem 0 0.4rem;
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+  }
+  .chapter-intro { max-width: 52rem; margin: 0; color: var(--cp-text-muted); font-size: 1.06rem; }
+  .grid { display: grid; gap: 1rem; margin-top: 1.5rem; }
+  .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .card { padding: 1.25rem; }
+  .card h3 { margin: 0.2rem 0 0.45rem; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--cp-text-muted); }
+  .status-chip {
+    display: inline-block;
+    color: var(--cp-accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .note {
+    margin-top: 1.5rem;
+    border: 1px solid var(--cp-border);
+    border-left: 4px solid var(--cp-warning);
+    border-radius: 0.625rem;
+    padding: 1rem 1.15rem;
+    background: var(--cp-surface-soft);
+    color: var(--cp-text-muted);
+  }
+  .note strong { color: var(--cp-text); }
+  figure { margin: 1.75rem 0 0; }
+  .media-frame {
+    overflow: hidden;
+    border: 1px solid var(--cp-border);
+    border-radius: 16px;
+    background: var(--cp-surface);
+  }
+  .media-frame img { display: block; width: 100%; height: auto; }
+  figcaption { padding: 0.75rem 1rem; color: var(--cp-text-muted); font-size: 0.82rem; }
+  .feature-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .feature-list li { border-left: 3px solid var(--cp-accent); padding: 0.75rem 0.9rem; background: var(--cp-surface-soft); }
+  .feature-list strong { display: block; margin-bottom: 0.15rem; }
+  .feature-list span { color: var(--cp-text-muted); }
+  .story-flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.5rem; }
+  .story-stage {
+    position: relative;
+    border: 1px solid var(--cp-border);
+    border-radius: 0.625rem;
+    padding: 1rem;
+    background: var(--cp-surface);
+  }
+  .story-stage:not(:last-child)::after { position: absolute; top: 50%; right: -0.7rem; color: var(--cp-accent); content: "→"; }
+  .story-stage b { display: block; color: var(--cp-accent); }
+  .story-stage span { color: var(--cp-text-muted); font-size: 0.88rem; }
+  .deploy-step { display: grid; grid-template-columns: 2.25rem minmax(0, 1fr); gap: 0.8rem; margin-top: 1.2rem; }
+  .deploy-step > b {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--cp-accent);
+    color: var(--cp-accent-fg);
+  }
+  .deploy-step h3 { margin: 0.2rem 0 0.4rem; }
+  .deploy-step p { margin: 0 0 0.7rem; color: var(--cp-text-muted); }
+  pre {
+    max-width: 100%;
+    overflow: auto;
+    margin: 0;
+    border: 1px solid var(--cp-border);
+    border-radius: 0.625rem;
+    padding: 1rem 1.1rem;
+    background: var(--cp-bg-elevated);
+  }
+  code { font-size: 0.84rem; }
+  .sql-bad { border-left: 4px solid var(--cp-danger); }
+  .sql-good { border-left: 4px solid var(--cp-success); }
+  .code-label { display: block; margin: 1.4rem 0 0.4rem; color: var(--cp-text-muted); font-size: 0.78rem; font-weight: 700; }
+  .architecture-frame {
+    overflow-x: auto;
+    border: 1px solid var(--cp-border);
+    border-radius: 16px;
+    padding: 1rem;
+    background: var(--cp-bg-elevated);
+  }
+  .architecture-frame svg { display: block; min-width: 48rem; width: 100%; height: auto; }
+  .arch-edge { fill: none; stroke: var(--cp-border-strong); stroke-width: 2; }
+  .arch-arrow { fill: var(--cp-border-strong); }
+  .arch-node { fill: var(--cp-surface); stroke: var(--cp-border-strong); stroke-width: 2; }
+  .arch-node-public { fill: var(--cp-highlight); stroke: var(--cp-danger); }
+  .arch-node-admin { fill: var(--cp-accent-soft); stroke: var(--cp-accent); }
+  .arch-node-mcp { fill: var(--cp-surface-soft); stroke: var(--cp-link); }
+  .arch-node-sql { fill: var(--cp-surface-soft); stroke: var(--cp-success); }
+  .arch-node-data { fill: var(--cp-surface); stroke: var(--cp-warning); }
+  .arch-label {
+    fill: var(--cp-text);
+    font-family: Consolas, "Courier New", Courier, monospace;
+    font-size: 12px;
+    text-anchor: middle;
+  }
+  .arch-small, .arch-edge-label {
+    fill: var(--cp-text-muted);
+    font-family: Consolas, "Courier New", Courier, monospace;
+    font-size: 10px;
+    text-anchor: middle;
+  }
+  .demo-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(15rem, 0.5fr); gap: 1rem; align-items: start; }
+  .demo-notes { display: grid; gap: 0.75rem; }
+  .demo-note { border: 1px solid var(--cp-border); border-radius: 0.625rem; padding: 0.9rem; background: var(--cp-surface); }
+  .demo-note b { display: block; color: var(--cp-accent); }
+  .demo-note span { color: var(--cp-text-muted); font-size: 0.86rem; }
+  .sources { border-top: 1px solid var(--cp-border); padding-block: 2rem; color: var(--cp-text-muted); }
+  .sources ul { margin: 0.7rem 0 0; padding-left: 1.15rem; }
+  footer { border-top: 1px solid var(--cp-border); padding-block: 2rem; color: var(--cp-text-soft); }
   @media (max-width: 900px) {
-    .hero { grid-template-columns: 1fr; }
-    .cols-3, .cols-2 { grid-template-columns: 1fr; }
+    .hero-grid, .guided-layout { grid-template-columns: 1fr; }
+    .step-rail { z-index: 10; top: 0; margin-inline: -1.25rem; padding: 0.5rem 1.25rem; background: var(--cp-overlay); }
+    .step-rail ol { display: flex; overflow-x: auto; gap: 0.35rem; }
+    .step-link { flex: 0 0 auto; grid-template-columns: auto 1fr; }
+    .grid-3, .story-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .story-stage::after { display: none; }
+    .demo-layout { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .wrap { width: min(100% - 1.5rem, 76rem); }
+    .step-rail { margin-inline: -0.75rem; padding-inline: 0.75rem; }
+    .hero { padding-block: 2.5rem; }
+    .hero h1 { font-size: clamp(2.25rem, 14vw, 3.5rem); }
+    .hero-grid, .grid-2, .grid-3, .feature-list, .story-flow { grid-template-columns: 1fr; }
+    .chapter-header { grid-template-columns: 3rem minmax(0, 1fr); }
+    .chapter-badge { width: 3rem; height: 3rem; }
+    .step-label { display: none; }
   }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-</style>
+  @media (forced-colors: active) {
+    .arch-node, .arch-node-public, .arch-node-admin, .arch-node-mcp, .arch-node-sql, .arch-node-data { fill: Canvas; stroke: CanvasText; }
+  }
+  @media print {
+    .step-rail, .hero-actions { display: none; }
+    .guided-layout { grid-template-columns: 1fr; }
+    .chapter { break-inside: avoid; }
+  }
+  </style>
 </head>
 <body>
-<header class="top">
-  <div class="wrap hero">
-    <div>
-      <p class="eyebrow">SQL Performance Lab // Evidence First</p>
-      <h1>MCP SQL Query Store Workshop</h1>
-      <p class="lede">An evidence-first L400 lab where a DBA uses <strong>GitHub Copilot</strong>, grounded by the <strong>Microsoft SQL MCP</strong> server and SQL Server <strong>Query Store</strong>, to optimize a stored procedure — <em>without changing a single output row</em>. Copilot proposes and explains; the tools measure; the human decides.</p>
-      <div class="cta">
-        <a class="btn btn-primary" href="https://ibranibeny.github.io/mcp-sql-query-store-workshop/">Open the workshop &rarr;</a>
-        <a class="btn btn-ghost" href="https://github.com/ibranibeny/mcp-sql-query-store-workshop">View the code</a>
+  <a class="skip-link" href="#main-content">Skip to workshop</a>
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="eyebrow">Six-step guided workshop · GitHub Copilot + SQL MCP</p>
+        <h1>Explore the schema. Optimize with evidence.</h1>
+        <p class="hero-lede">Learn how GitHub Copilot in SQL Server Management Studio helps a DBA understand an unfamiliar database, investigate an expensive query, and produce a safer optimization—grounded in Microsoft SQL MCP and Query Store evidence.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#overview">Start Step 01</a>
+          <a class="button button-secondary" href="https://github.com/ibranibeny/mcp-sql-query-store-workshop">Open source repository</a>
+        </div>
       </div>
+      <aside class="hero-contract" aria-labelledby="decision-title">
+        <p class="step-kicker">Workshop operating model</p>
+        <h2 id="decision-title">Move every claim through evidence</h2>
+        <ol class="decision-path"><li>HYPOTHESIS</li><li>MEASURED</li><li>DECISION</li></ol>
+      </aside>
     </div>
-    <div class="gauge" aria-label="Query workspace grant utilization target">
-      <div class="label">Query-workspace grant utilization &mdash; target</div>
-      <svg viewBox="0 0 320 150" role="img" aria-label="Baseline approximately 80 percent target moving toward approximately 40 percent target">
-        <text x="10" y="26" fill="#7b94a8" font-family="Consolas,monospace" font-size="11">BASELINE (target band 75–85%)</text>
-        <rect x="10" y="34" width="300" height="16" rx="8" fill="#18222f" stroke="#223140"></rect>
-        <rect x="10" y="34" width="240" height="16" rx="8" fill="#ffb020"></rect>
-        <text x="256" y="47" fill="#ffb020" font-family="Consolas,monospace" font-size="12" font-weight="700">~80%</text>
-        <text x="10" y="88" fill="#7b94a8" font-family="Consolas,monospace" font-size="11">OPTIMIZED (target band 35–45%)</text>
-        <rect x="10" y="96" width="300" height="16" rx="8" fill="#18222f" stroke="#223140"></rect>
-        <rect x="10" y="96" width="120" height="16" rx="8" fill="#40d867"></rect>
-        <text x="136" y="109" fill="#40d867" font-family="Consolas,monospace" font-size="12" font-weight="700">~40%</text>
-        <text x="10" y="138" fill="#7b94a8" font-family="Consolas,monospace" font-size="10">A target, not a measured result. Report what the lab actually measures.</text>
-      </svg>
+  </header>
+  <main id="main-content" class="wrap guided-layout" tabindex="-1">
+    <nav class="step-rail" aria-label="Workshop steps">
+      <ol>
+        <li><a class="step-link" href="#overview" aria-current="step"><span class="step-number">01</span><span class="step-label">Copilot overview</span></a></li>
+        <li><a class="step-link" href="#ssms"><span class="step-number">02</span><span class="step-label">Copilot in SSMS</span></a></li>
+        <li><a class="step-link" href="#use-case"><span class="step-number">03</span><span class="step-label">Use-case story</span></a></li>
+        <li><a class="step-link" href="#deploy"><span class="step-number">04</span><span class="step-label">Deploy</span></a></li>
+        <li><a class="step-link" href="#architecture"><span class="step-number">05</span><span class="step-label">Architecture</span></a></li>
+        <li><a class="step-link" href="#demo"><span class="step-number">06</span><span class="step-label">SSMS demo</span></a></li>
+      </ol>
+    </nav>
+    <div class="chapters">
+      <section id="overview" class="chapter" data-step="01">
+        <header class="chapter-header"><div class="chapter-badge">01</div><div><p class="step-kicker">Understand the assistant</p><h2>GitHub Copilot overview</h2><p class="chapter-intro">GitHub Copilot is an AI coding assistant that helps developers understand, write, explain, and improve code. In a database workflow, it is most useful as a collaborator: it proposes queries and explanations while the DBA retains control over permissions, correctness, and deployment.</p></div></header>
+        <div class="grid grid-3">
+          <article class="card"><span class="status-chip">Ask</span><h3>Explain unfamiliar systems</h3><p>Ask natural-language questions about code, schema, and database behavior without leaving the editor.</p></article>
+          <article class="card"><span class="status-chip">Build</span><h3>Draft and refine code</h3><p>Generate T-SQL, document intent, refactor a query, and review the proposed change as a diff.</p></article>
+          <article class="card"><span class="status-chip">Agent</span><h3>Work through goals</h3><p>Agent mode can select tools and iterate through a task, but it never receives permissions beyond the connected identity.</p></article>
+        </div>
+        <div class="note"><strong>Evidence rule:</strong> Copilot output is a hypothesis, not proof. Query Store, execution plans, bounded MCP diagnostics, and result-equivalence tests decide whether a change is safe.</div>
+      </section>
+      <section id="ssms" class="chapter" data-step="02">
+        <header class="chapter-header"><div class="chapter-badge">02</div><div><p class="step-kicker">Work where the database lives</p><h2>GitHub Copilot in SSMS</h2><p class="chapter-intro">Microsoft documents GitHub Copilot as an AI assistant in SSMS 22 or later. Install the AI Assistance workload, connect a query editor to the database, open the Copilot badge, and sign in with a GitHub account that has Copilot access.</p></div></header>
+        <figure class="media-frame">
+          <img src="assets/copilot-ssms-get-started.png" alt="Microsoft Learn page showing how to get started with GitHub Copilot in SSMS" width="1500" height="900" loading="lazy">
+          <figcaption>Image source: Microsoft — <a href="https://www.microsoft.com/en-us/thesource-developer/Event/401/get-started-with-github-copilot-in-sql-server-management-studio">Get started with GitHub Copilot in SQL Server Management Studio</a>, discovered through WebIQ.</figcaption>
+        </figure>
+        <ul class="feature-list">
+          <li><strong>Chat and inline chat</strong><span>Ask general SQL questions or questions grounded in the active editor and database connection.</span></li>
+          <li><strong>Code completions and Next Edit Suggestions</strong><span>Receive T-SQL ghost text and likely next edits based on the connected schema and current file.</span></li>
+          <li><strong>Slash commands</strong><span>Use focused assistance such as <code>/explain</code>, <code>/fix</code>, <code>/optimize</code>, and <code>/doc</code>.</span></li>
+          <li><strong>Database instructions</strong><span>Use <code>CONSTITUTION.md</code> to provide durable database rules and an optional execution identity.</span></li>
+          <li><strong>Agent mode and skills</strong><span>Agent mode works through a goal; skills provide reusable task-specific instructions.</span></li>
+          <li><strong>MCP servers</strong><span>Agent mode can discover and call MCP tools. Tools are disabled until explicitly enabled and remain permission-constrained.</span></li>
+        </ul>
+        <div class="note"><strong>Security boundary:</strong> Ask mode’s read-only classification is not a security boundary. SQL Server permissions remain authoritative; use least-privilege <code>SELECT</code> and <code>EXECUTE</code> grants.</div>
+      </section>
+      <section id="use-case" class="chapter" data-step="03">
+        <header class="chapter-header"><div class="chapter-badge">03</div><div><p class="step-kicker">The business problem</p><h2>AI schema exploration and SQL query optimization</h2><p class="chapter-intro">Adventure Works has an unfamiliar schema and a month-end report that has become expensive as sales history grows. The DBA must understand the database, identify the query shape, and optimize it without changing a single result row.</p></div></header>
+        <div class="story-flow" aria-label="Use-case sequence">
+          <div class="story-stage"><b>Explore</b><span>Ask Copilot how many tables exist, what <code>Sales.Store</code> represents, and how key entities relate.</span></div>
+          <div class="story-stage"><b>Inspect</b><span>Read <code>lab.FactSales</code> and <code>lab.usp_MonthEndSalesBaseline</code>; attach the query or plan as context.</span></div>
+          <div class="story-stage"><b>Measure</b><span>Use Query Store and six bounded SQL MCP diagnostics for runtime, waits, plans, and memory-grant evidence.</span></div>
+          <div class="story-stage"><b>Prove</b><span>Build one candidate beside the baseline, verify result equivalence, run frozen A/B trials, and decide.</span></div>
+        </div>
+        <div class="grid grid-2">
+          <article class="card"><span class="status-chip">Schema exploration</span><h3>From catalog to business meaning</h3><p>Copilot can summarize objects and relationships, but the active login controls what it can inspect. In the workshop, schema exploration is connected to AdventureWorks2022 and reviewed by the DBA.</p></article>
+          <article class="card"><span class="status-chip">Query optimization</span><h3>From symptom to verified change</h3><p>Query Store narrows attention to top resource consumers and wait categories. MCP returns described, bounded evidence; Copilot turns that evidence into ranked hypotheses and candidate changes.</p></article>
+        </div>
+      </section>
+      <section id="deploy" class="chapter" data-step="04">
+        <header class="chapter-header"><div class="chapter-badge">04</div><div><p class="step-kicker">Build the disposable lab</p><h2>Deploy the workshop step by step</h2><p class="chapter-intro">Run these steps from PowerShell 7.4 or later. Deployment is billable and phrase-gated. Never place secrets in source control, terminal screenshots, or chat.</p></div></header>
+        <div class="deploy-step"><b>1</b><div><h3>Clone and pin the repository</h3><p>Use the exact commit you reviewed so both VM bootstrap records bind to immutable source.</p><pre><code>git clone https://github.com/ibranibeny/mcp-sql-query-store-workshop.git
+Set-Location ./mcp-sql-query-store-workshop
+$repositoryCommit = (git rev-parse HEAD).Trim()</code></pre></div></div>
+        <div class="deploy-step"><b>2</b><div><h3>Install local validation dependencies</h3><p>The repository test path is local and creates no Azure resources.</p><pre><code>python -m venv .venv
+./build/Install-DevDependencies.ps1 -AllowPublicPackageIndex -AllowPowerShellGallery
+./build/Test-Repository.ps1 -RequirePSScriptAnalyzer</code></pre></div></div>
+        <div class="deploy-step"><b>3</b><div><h3>Collect immutable inputs and secrets</h3><p>Use your real subscription, tenant, facilitator public IPv4 <code>/32</code>, and an expiration within seven days.</p><pre><code>$subscriptionId = '&lt;subscription-guid&gt;'
+$tenantId = '&lt;tenant-guid&gt;'
+$facilitatorCidr = '&lt;public-ipv4&gt;/32'
+$expiresOn = (Get-Date).Date.AddDays(5)
+$repositoryUrl = 'https://github.com/ibranibeny/mcp-sql-query-store-workshop'
+$credential = Get-Credential -UserName 'workshopadmin'
+$databaseMasterKeyPassword = Read-Host 'Database master key password' -AsSecureString
+$mcpReaderPassword = Read-Host 'MCP reader password' -AsSecureString</code></pre></div></div>
+        <div class="deploy-step"><b>4</b><div><h3>Run the non-destructive preflight</h3><p>Stop if any context, provider, quota, SKU, image, licensing, CIDR, or expiration check fails.</p><pre><code>./deploy/Test-WorkshopPrerequisites.ps1 `
+  -SubscriptionId $subscriptionId `
+  -TenantId $tenantId `
+  -FacilitatorCidr $facilitatorCidr `
+  -ExpiresOn $expiresOn `
+  -WindowsClientLicenseAttested `
+  -SqlEnterpriseCostAcknowledged `
+  -BillableResourcesAcknowledged</code></pre></div></div>
+        <div class="deploy-step"><b>5</b><div><h3>Review the plan, then deploy</h3><p>Confirm the region, two VM SKUs, disks, private SQL boundary, NAT, RDP <code>/32</code>, licensing, expiration, and cost categories before approving.</p><pre><code>./deploy/Deploy-WorkshopEnvironment.ps1 `
+  -SubscriptionId $subscriptionId -TenantId $tenantId `
+  -FacilitatorCidr $facilitatorCidr -ExpiresOn $expiresOn `
+  -Credential $credential `
+  -DatabaseMasterKeyPassword $databaseMasterKeyPassword `
+  -McpReaderPassword $mcpReaderPassword `
+  -RepositoryUrl $repositoryUrl -RepositoryCommit $repositoryCommit `
+  -WindowsClientLicenseAttested `
+  -SqlEnterpriseCostAcknowledged `
+  -BillableResourcesAcknowledged `
+  -ApproveBillableDeployment `
+  -ConfirmationPhrase 'DEPLOY rg-mcp-sql-workshop'</code></pre></div></div>
+        <div class="deploy-step"><b>6</b><div><h3>Accept only positive readiness</h3><p>Proceed only when network boundary, VM boundary, SQL bootstrap, admin bootstrap, and end-to-end readiness all pass. Then RDP to the admin VM and connect SSMS with Windows Authentication as <code>workshopadmin</code>.</p></div></div>
+        <span class="code-label">The deliberately non-optimized query shape</span>
+        <pre class="sql-bad"><code>SELECT fs.TerritoryID,
+       SUM(fs.SalesAmount) AS TotalSales,
+       COUNT_BIG(*) AS OrderCount
+FROM lab.FactSales AS fs
+WHERE YEAR(fs.OrderDate) = 2013
+  AND MONTH(fs.OrderDate) = 6
+GROUP BY fs.TerritoryID;</code></pre>
+        <p>The function-wrapped date column is non-SARGable. With 8,000,000 workshop rows and no supporting date index, SQL Server scans rather than seeks. The baseline also carries an unused <code>char(400)</code> payload through intermediate work, increasing its query-workspace memory grant.</p>
+        <span class="code-label">Candidate optimization—prove equivalence before adoption</span>
+        <pre class="sql-good"><code>SELECT fs.TerritoryID,
+       SUM(fs.SalesAmount) AS TotalSales,
+       COUNT_BIG(*) AS OrderCount
+FROM lab.FactSales AS fs
+WHERE fs.OrderDate &gt;= '2013-06-01'
+  AND fs.OrderDate &lt;  '2013-07-01'
+GROUP BY fs.TerritoryID;
+
+CREATE NONCLUSTERED INDEX IX_FactSales_OrderDate_Territory
+ON lab.FactSales (OrderDate, TerritoryID)
+INCLUDE (SalesAmount);
+
+-- Rollback
+DROP INDEX IX_FactSales_OrderDate_Territory ON lab.FactSales;</code></pre>
+        <div class="note"><strong>Target, not a result:</strong> the workshop aims to move regular query-workspace grant utilization from a 75–85% baseline band toward a 35–45% optimized band. Record the actual measured result even when it misses the target.</div>
+      </section>
+      <section id="architecture" class="chapter" data-step="05">
+        <header class="chapter-header"><div class="chapter-badge">05</div><div><p class="step-kicker">Follow the trust boundary</p><h2>Architecture demo</h2><p class="chapter-intro">The facilitator reaches one public administration endpoint. SQL Server remains private. GitHub Copilot and the local DAB SQL MCP process operate from the admin VM over encrypted private TDS.</p></div></header>
+        <figure class="architecture-frame">
+          <svg viewBox="0 0 1120 390" role="img" aria-labelledby="architecture-title architecture-desc">
+            <title id="architecture-title">MCP SQL workshop two-tier architecture</title>
+            <desc id="architecture-desc">The facilitator connects by restricted RDP to a Windows 11 administration VM. VS Code and SSMS host GitHub Copilot and call the local DAB SQL MCP server. The MCP server connects over encrypted private TDS as the least-privilege workshop reader to SQL Server 2022. Query Store persists plans, runtime statistics, and wait statistics. The SQL VM has no public IP.</desc>
+            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path class="arch-arrow" d="M0,0 L0,6 L9,3 z"></path></marker></defs>
+            <path class="arch-edge" d="M175 95 L230 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M390 95 L445 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M665 95 L720 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M880 95 L935 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M555 145 L555 250" marker-end="url(#arrow)"></path><path class="arch-edge" d="M800 135 L800 250" marker-end="url(#arrow)"></path><path class="arch-edge" d="M1015 145 L1015 250" marker-end="url(#arrow)"></path>
+            <text class="arch-edge-label" x="202" y="82">RDP 3389 · /32</text><text class="arch-edge-label" x="692" y="82">tools/list · tools/call</text><text class="arch-edge-label" x="907" y="82">TLS TDS 1433</text>
+            <rect class="arch-node arch-node-public" x="25" y="55" width="150" height="80" rx="10"></rect><text class="arch-label" x="100" y="89">Facilitator</text><text class="arch-small" x="100" y="109">approved public /32</text>
+            <rect class="arch-node arch-node-public" x="230" y="55" width="160" height="80" rx="10"></rect><text class="arch-label" x="310" y="89">Admin public IP</text><text class="arch-small" x="310" y="109">RDP only</text>
+            <rect class="arch-node arch-node-admin" x="445" y="45" width="220" height="100" rx="10"></rect><text class="arch-label" x="555" y="78">Windows 11 admin VM</text><text class="arch-small" x="555" y="99">VS Code · SSMS · Copilot</text><text class="arch-small" x="555" y="117">10.20.1.0/24</text>
+            <rect class="arch-node arch-node-mcp" x="720" y="55" width="160" height="80" rx="10"></rect><text class="arch-label" x="800" y="89">DAB SQL MCP</text><text class="arch-small" x="800" y="109">10 bounded tools</text>
+            <rect class="arch-node arch-node-sql" x="935" y="45" width="160" height="100" rx="10"></rect><text class="arch-label" x="1015" y="77">SQL 2022 VM</text><text class="arch-small" x="1015" y="98">10.20.2.10</text><text class="arch-small" x="1015" y="116">no public IP</text>
+            <rect class="arch-node" x="445" y="250" width="220" height="80" rx="10"></rect><text class="arch-label" x="555" y="284">NAT Gateway</text><text class="arch-small" x="555" y="304">outbound only</text>
+            <rect class="arch-node arch-node-data" x="720" y="250" width="160" height="80" rx="10"></rect><text class="arch-label" x="800" y="284">Reader identity</text><text class="arch-small" x="800" y="304">SELECT + EXECUTE only</text>
+            <rect class="arch-node arch-node-data" x="935" y="250" width="160" height="80" rx="10"></rect><text class="arch-label" x="1015" y="284">Query Store</text><text class="arch-small" x="1015" y="304">plans · runtime · waits</text>
+          </svg>
+          <figcaption>Colored trust-boundary view: public ingress uses the alert treatment, administration uses the accent treatment, MCP uses link blue, private SQL uses success green, and evidence stores use warning gold.</figcaption>
+        </figure>
+      </section>
+      <section id="demo" class="chapter" data-step="06">
+        <header class="chapter-header"><div class="chapter-badge">06</div><div><p class="step-kicker">See the use case in SSMS</p><h2>SSMS schema exploration demo</h2><p class="chapter-intro">The attached workshop capture shows GitHub Copilot answering an Indonesian schema-quality prompt against the connected AdventureWorks2022 database while SSMS keeps the catalog and approval boundary visible.</p></div></header>
+        <div class="demo-layout">
+          <figure class="media-frame">
+            <a href="assets/ssms-copilot-schema-exploration.png"><img src="assets/ssms-copilot-schema-exploration.png" alt="GitHub Copilot in SSMS reviewing the Sales.Store schema" width="1914" height="877" loading="lazy"></a>
+            <figcaption>Workshop screenshot: GitHub Copilot in SSMS reviewing <code>Sales.Store</code>. Select the image to open the full-resolution capture.</figcaption>
+          </figure>
+          <aside class="demo-notes" aria-label="Screenshot callouts">
+            <div class="demo-note"><b>1 · Connected context</b><span>Object Explorer confirms <code>sql01.mcpworkshop.internal</code> and AdventureWorks2022.</span></div>
+            <div class="demo-note"><b>2 · Schema exploration</b><span>Copilot reports the primary key, indexes, XML index, foreign keys, nullability, duplicates, and orphan-key checks for <code>Sales.Store</code>.</span></div>
+            <div class="demo-note"><b>3 · Approval boundary</b><span>The visible approval control asks before the SQL tool uses the language model. The connected login’s permissions remain authoritative.</span></div>
+            <div class="demo-note"><b>4 · Next prompt</b><span>Ask Copilot to produce the read-only query used for each claim, then verify it before moving to optimization.</span></div>
+          </aside>
+        </div>
+      </section>
     </div>
-  </div>
-</header>
-
-<main>
-  <section id="overview">
-    <div class="wrap">
-      <p class="eyebrow">Overview</p>
-      <h2>GitHub Copilot, grounded in SQL evidence</h2>
-      <p>Large-language-model assistants are fast at proposing T-SQL and explaining plans, but they can be confidently wrong. This workshop pairs Copilot with two sources of ground truth: <strong>Query Store</strong> — SQL Server's built-in "flight data recorder" of plans, runtime statistics, and wait statistics — and the <strong>Microsoft SQL MCP</strong> server, which exposes only bounded, read-only evidence tools. The discipline is simple and repeatable:</p>
-      <div class="flow">
-        <span class="step"><span class="signal s-amber"></span>TARGET / HYPOTHESIS</span>
-        <span class="arrow">&rarr;</span>
-        <span class="step"><span class="signal s-azure"></span>MEASURED</span>
-        <span class="arrow">&rarr;</span>
-        <span class="step"><span class="signal s-green"></span>DECISION</span>
-      </div>
-      <div class="grid cols-3">
-        <div class="card"><p class="k">Propose</p><h3>Copilot</h3><p>Explains the procedure, forms hypotheses, and drafts a contract-preserving candidate rewrite.</p></div>
-        <div class="card"><p class="k">Measure</p><h3>Query Store + SQL MCP</h3><p>Bounded, read-only tools return plans, top queries, waits, memory grants, and A/B run comparisons.</p></div>
-        <div class="card"><p class="k">Decide</p><h3>The DBA</h3><p>Proves result equivalence, runs frozen A/B trials, and decides what ships. The human owns the outcome.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="ssms">
-    <div class="wrap">
-      <p class="eyebrow">GitHub Copilot in SSMS</p>
-      <h2>Chat, Agent mode, skills, and MCP</h2>
-      <p>SQL Server Management Studio 22 ships GitHub Copilot as a first-class client, so the same evidence discipline applies whether you drive Copilot from VS Code or from SSMS. The surfaces you use in this lab:</p>
-      <div class="grid cols-2">
-        <div class="card"><p class="k">Ask</p><h3>Chat &amp; inline chat</h3><p>Natural-language questions about the connected database and T-SQL help, scoped by the active query editor and its connection — not the whole server.</p></div>
-        <div class="card"><p class="k">Assist</p><h3>Slash commands</h3><p><code>/explain</code>, <code>/fix</code>, <code>/optimize</code>, and <code>/doc</code> explain, repair, optimize, or document the selected T-SQL. The lab uses <code>/explain</code> and <code>/optimize</code> on the baseline.</p></div>
-        <div class="card"><p class="k">Author</p><h3>Completions &amp; Next Edit</h3><p>Inline code completions (SSMS 22.2+) plus Next Edit Suggestions that anticipate your next change from recent edits.</p></div>
-        <div class="card"><p class="k">Ground</p><h3>Database instructions</h3><p>A <code>CONSTITUTION.md</code> stored with the database supplies business rules and an optional least-privilege execution identity for Copilot-generated queries.</p></div>
-        <div class="card"><p class="k">Automate</p><h3>Agent mode &amp; skills (22.7+)</h3><p>Agent mode pursues a goal autonomously — executing queries, reading plans, and (only with approval) changing schema. <strong>Agent skills</strong> are reusable, task-specific instruction files. In this lab the reader principal holds no DDL grant, so Agent mode stays read-only here.</p></div>
-        <div class="card"><p class="k">Extend</p><h3>MCP servers</h3><p>Agent mode is a Model Context Protocol client. Each MCP tool is disabled by default and enabled explicitly; every query or tool call requests confirmation. Ask mode does not support MCP.</p></div>
-      </div>
-      <div class="note"><strong>Least privilege is the real boundary.</strong> Copilot's read-only classification blocks writes, but Microsoft is explicit that it is <em>not</em> a security boundary. Access control is enforced in the database with <code>SELECT</code>/<code>EXECUTE</code> grants; Azure RBAC governs Azure resources, not data.</div>
-    </div>
-  </section>
-
-  <section id="mcp">
-    <div class="wrap">
-      <p class="eyebrow">The Microsoft SQL MCP server</p>
-      <h2>Bounded, read-only evidence — not a query console</h2>
-      <p>The workshop hosts Microsoft's SQL MCP server with <strong>Data API Builder 2.0.9</strong> over local <strong>stdio</strong>. VS Code launches the DAB child process and exchanges <strong>JSON-RPC</strong> messages (<code>initialize</code> &rarr; <code>notifications/initialized</code> &rarr; <code>tools/list</code> &rarr; <code>tools/call</code>). It exposes exactly <strong>10 tools</strong> — never arbitrary SQL, DDL, or server configuration.</p>
-      <div class="grid cols-2">
-        <div class="card"><p class="k">4 generic tools</p><h3>Describe &amp; read</h3><p><code>describe_entities</code>, <code>read_records</code>, <code>aggregate_records</code>, <code>execute_entity</code>. Create, update, and delete are disabled.</p></div>
-        <div class="card"><p class="k">6 diagnostic tools</p><h3>Query Store evidence</h3><p><code>get_query_store_top_queries</code>, <code>get_query_store_waits</code>, <code>get_procedure_plan_summary</code>, <code>get_memory_snapshot</code>, <code>get_active_workshop_grants</code>, <code>compare_workshop_runs</code>.</p></div>
-      </div>
-    </div>
-  </section>
-
-  <section id="story">
-    <div class="wrap">
-      <p class="eyebrow">Background story</p>
-      <h2>A month-end procedure that eats the memory grant</h2>
-      <p>Adventure Works closes its books every month with a single stored procedure that aggregates sales into a territory-by-customer summary. As the fact table grew past <strong>8&nbsp;million rows</strong>, that month-end run began to dominate an isolated SQL Server query-workspace memory pool: wide rows are materialized early, carried through intermediate work, and aggregated late — so a large share of the pool's grant is consumed on every execution while the business result never changes.</p>
-      <p>A skeptical DBA is asked to make it faster <strong>without changing a single output row</strong>. Rather than guess, they pair Copilot's explanations and candidate rewrites with the SQL MCP tools and Query Store measurements, prove equivalence, and decide. Every artifact runs inside a disposable, isolated two-VM lab so the experiment can never touch production.</p>
-    </div>
-  </section>
-
-  <section id="architecture">
-    <div class="wrap">
-      <p class="eyebrow">Architecture</p>
-      <h2>A two-tier, private-by-default lab</h2>
-      <p>Only the Windows 11 administration VM has public ingress — RDP restricted to one facilitator <code>/32</code>. The SQL Server 2022 VM has <strong>no public IP</strong>; both subnets reach the internet only through a NAT gateway.</p>
-      <div class="diagram">
-        <svg viewBox="0 0 960 236" role="img" aria-label="Two-tier lab architecture. The facilitator RDPs from an approved /32 to the admin public IP and the Windows 11 admin VM, which hosts VS Code, SSMS, GitHub Copilot and the SQL MCP server. The MCP connects over encrypted TDS 1433 as a least-privilege reader to the private SQL Server 2022 VM (no public IP) and its Query Store. Both subnets reach approved outbound endpoints only through a NAT gateway.">
-          <defs>
-            <marker id="ah" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L8,3 z" fill="#7b94a8"></path>
-            </marker>
-          </defs>
-          <line x1="130" y1="54" x2="154" y2="54" stroke="#7b94a8" stroke-width="2" marker-end="url(#ah)"></line>
-          <line x1="290" y1="54" x2="314" y2="54" stroke="#7b94a8" stroke-width="2" marker-end="url(#ah)"></line>
-          <line x1="568" y1="54" x2="592" y2="54" stroke="#7b94a8" stroke-width="2" marker-end="url(#ah)"></line>
-          <line x1="766" y1="54" x2="790" y2="54" stroke="#7b94a8" stroke-width="2" marker-end="url(#ah)"></line>
-          <line x1="442" y1="84" x2="410" y2="154" stroke="#7b94a8" stroke-width="2" marker-end="url(#ah)"></line>
-          <line x1="680" y1="84" x2="486" y2="154" stroke="#7b94a8" stroke-width="2" marker-end="url(#ah)"></line>
-          <line x1="492" y1="182" x2="592" y2="182" stroke="#7b94a8" stroke-width="2" marker-end="url(#ah)"></line>
-          <text x="142" y="46" fill="#7b94a8" font-family="Consolas,monospace" font-size="10" text-anchor="middle">RDP 3389</text>
-          <text x="580" y="46" fill="#7b94a8" font-family="Consolas,monospace" font-size="10" text-anchor="middle">MCP · TLS 1433</text>
-          <g>
-            <rect x="10" y="24" width="120" height="60" rx="10" fill="#1b2a12" stroke="#ffb020" stroke-width="2"></rect>
-            <text x="70" y="50" fill="#ffe1a3" font-family="Consolas,monospace" font-size="12" text-anchor="middle">Facilitator</text>
-            <text x="70" y="67" fill="#ffe1a3" font-family="Consolas,monospace" font-size="10" text-anchor="middle">approved /32</text>
-          </g>
-          <g>
-            <rect x="156" y="24" width="134" height="60" rx="10" fill="#2a1414" stroke="#ff5b56" stroke-width="2"></rect>
-            <text x="223" y="58" fill="#ffd0ce" font-family="Consolas,monospace" font-size="12" text-anchor="middle">Admin public IP</text>
-          </g>
-          <g>
-            <rect x="316" y="24" width="252" height="60" rx="10" fill="#0f2036" stroke="#4bb4ff" stroke-width="2"></rect>
-            <text x="442" y="49" fill="#cfe6ff" font-family="Consolas,monospace" font-size="12" text-anchor="middle">Windows 11 admin VM</text>
-            <text x="442" y="66" fill="#cfe6ff" font-family="Consolas,monospace" font-size="10" text-anchor="middle">VS Code · SSMS · Copilot · SQL MCP</text>
-          </g>
-          <g>
-            <rect x="594" y="24" width="172" height="60" rx="10" fill="#0d2a1a" stroke="#40d867" stroke-width="2"></rect>
-            <text x="680" y="49" fill="#c4f5d6" font-family="Consolas,monospace" font-size="12" text-anchor="middle">SQL 2022 VM</text>
-            <text x="680" y="66" fill="#c4f5d6" font-family="Consolas,monospace" font-size="10" text-anchor="middle">10.20.2.10 · no public IP</text>
-          </g>
-          <g>
-            <rect x="792" y="24" width="158" height="60" rx="10" fill="#08302a" stroke="#35e0d0" stroke-width="2"></rect>
-            <text x="871" y="49" fill="#bff4ee" font-family="Consolas,monospace" font-size="12" text-anchor="middle">Query Store</text>
-            <text x="871" y="66" fill="#bff4ee" font-family="Consolas,monospace" font-size="10" text-anchor="middle">plans · waits · grants</text>
-          </g>
-          <g>
-            <rect x="316" y="154" width="176" height="52" rx="10" fill="#08262e" stroke="#22d3ee" stroke-width="2"></rect>
-            <text x="404" y="184" fill="#bdeff7" font-family="Consolas,monospace" font-size="12" text-anchor="middle">NAT Gateway</text>
-          </g>
-          <g>
-            <rect x="594" y="154" width="220" height="52" rx="10" fill="#1b2a12" stroke="#ffb020" stroke-width="2"></rect>
-            <text x="704" y="184" fill="#ffe1a3" font-family="Consolas,monospace" font-size="11" text-anchor="middle">Approved outbound endpoints</text>
-          </g>
-        </svg>
-      </div>
-    </div>
-  </section>
-
-  <section id="deploy">
-    <div class="wrap">
-      <p class="eyebrow">Deployment</p>
-      <h2>Gated, evidence-driven provisioning</h2>
-      <p>Deployment uses native Az PowerShell entry points and never bypasses the preflight gate. The flow is deliberate: a read-only preflight, a plan card read aloud, a phrase-gated deployment, then a phase-by-phase readback.</p>
-      <div class="flow">
-        <span class="step">1 · Preflight</span><span class="arrow">&rarr;</span>
-        <span class="step">2 · Plan card</span><span class="arrow">&rarr;</span>
-        <span class="step">3 · Gated deploy</span><span class="arrow">&rarr;</span>
-        <span class="step">4 · Read every phase back</span>
-      </div>
-      <pre><code><span class="cmt"># Phrase- and ShouldProcess-gated; both must approve creation</span>
-./deploy/Deploy-WorkshopEnvironment.ps1 <span class="kw">`</span>
-  -SubscriptionId $subscriptionId -FacilitatorCidr $facilitatorCidr -ExpiresOn $expiresOn <span class="kw">`</span>
-  -WindowsClientLicenseAttested -SqlEnterpriseCostAcknowledged -BillableResourcesAcknowledged <span class="kw">`</span>
-  -ApproveBillableDeployment -ConfirmationPhrase <span class="kw">'DEPLOY rg-mcp-sql-workshop'</span></code></pre>
-
-      <h3 style="margin-top:2.5rem;">The non-optimized workload you tune</h3>
-      <p>Deployment provisions AdventureWorks2022 with an 8,000,000-row <code>lab.FactSales</code> table and the deliberately non-optimized <code>lab.usp_MonthEndSalesBaseline</code>. You never edit it in place — you build a contract-equivalent candidate, prove equivalence, then compare with frozen A/B trials. The baseline concentrates classic anti-patterns:</p>
-      <table>
-        <thead><tr><th>Anti-pattern</th><th>Why it is slow</th></tr></thead>
-        <tbody>
-          <tr><td>Non-SARGable date filter</td><td>A function wraps the column, so no index seek is possible — the 8M-row clustered index is scanned every run.</td></tr>
-          <tr><td>Wide over-materialization</td><td>A <code>char(400)</code> payload is carried through intermediate work before aggregating, inflating the query-workspace memory grant.</td></tr>
-          <tr><td><code>SELECT *</code> + unindexed sort</td><td>Unused wide columns are dragged through a sort that can spill to TempDB.</td></tr>
-          <tr><td>Leading-wildcard <code>LIKE</code></td><td><code>LIKE '%…%'</code> on a wide column forces a full scan — no index can seek it.</td></tr>
-        </tbody>
-      </table>
-      <pre><code><span class="cmt">-- Non-optimized: a function on the column defeats an index seek and forces a full scan</span>
-<span class="kw">SELECT</span> fs.TerritoryID, <span class="kw">SUM</span>(fs.SalesAmount) <span class="kw">AS</span> TotalSales, <span class="kw">COUNT_BIG</span>(*) <span class="kw">AS</span> OrderCount
-<span class="kw">FROM</span> lab.FactSales <span class="kw">AS</span> fs
-<span class="kw">WHERE</span> <span class="kw">YEAR</span>(fs.OrderDate) = 2013 <span class="kw">AND</span> <span class="kw">MONTH</span>(fs.OrderDate) = 6
-<span class="kw">GROUP BY</span> fs.TerritoryID;
-
-<span class="cmt">-- Optimized: SARGable half-open range + a covering index (create the index as admin, not via SQL MCP)</span>
-<span class="kw">SELECT</span> fs.TerritoryID, <span class="kw">SUM</span>(fs.SalesAmount) <span class="kw">AS</span> TotalSales, <span class="kw">COUNT_BIG</span>(*) <span class="kw">AS</span> OrderCount
-<span class="kw">FROM</span> lab.FactSales <span class="kw">AS</span> fs
-<span class="kw">WHERE</span> fs.OrderDate &gt;= <span class="kw">'2013-06-01'</span> <span class="kw">AND</span> fs.OrderDate &lt; <span class="kw">'2013-07-01'</span>
-<span class="kw">GROUP BY</span> fs.TerritoryID;
-<span class="cmt">-- CREATE NONCLUSTERED INDEX IX_FactSales_OrderDate_Territory</span>
-<span class="cmt">--   ON lab.FactSales (OrderDate, TerritoryID) INCLUDE (SalesAmount);</span>
-<span class="cmt">-- Rollback: DROP INDEX IX_FactSales_OrderDate_Territory ON lab.FactSales;</span></code></pre>
-      <div class="note">The goal is to move query-workspace grant utilization from an approximately 80% baseline toward approximately 40% — a <strong>target, not a promised result</strong>. If the target is missed, report the observed outcome.</div>
-    </div>
-  </section>
-
-  <section id="resources">
-    <div class="wrap">
-      <p class="eyebrow">Resources</p>
-      <h2>Official documentation</h2>
-      <ul class="tight">
-        <li><a href="https://learn.microsoft.com/ssms/github-copilot/overview">GitHub Copilot in SQL Server Management Studio</a> — Chat, Agent mode, skills</li>
-        <li><a href="https://learn.microsoft.com/ssms/github-copilot/mcp-servers">Use MCP servers with GitHub Copilot in SSMS</a></li>
-        <li><a href="https://learn.microsoft.com/azure/data-api-builder/mcp/overview">Microsoft SQL MCP (Data API Builder)</a></li>
-        <li><a href="https://learn.microsoft.com/sql/relational-databases/performance/monitoring-performance-by-using-the-query-store">Monitor performance with the Query Store</a></li>
-        <li><a href="https://ibranibeny.github.io/mcp-sql-query-store-workshop/">The full workshop site &rarr;</a></li>
-      </ul>
-    </div>
-  </section>
-</main>
-
-<footer>
-  <div class="wrap">
-    <span>Evidence-driven SQL tuning with human review. Do not run the workshop workload against production.</span>
-    <span class="chip">L400 · Query Store · SQL MCP</span>
-  </div>
-</footer>
-
+  </main>
+  <aside class="sources"><div class="wrap"><p class="step-kicker">Official sources</p><ul>
+    <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/get-started">Get started with GitHub Copilot in SQL Server Management Studio</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/overview">What is GitHub Copilot in SSMS?</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/chat">Use GitHub Copilot Chat in SSMS</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/ssms/github-copilot/mcp-servers">Use MCP servers with GitHub Copilot in SSMS</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/azure/data-api-builder/mcp/overview">Microsoft SQL MCP server overview</a></li>
+    <li><a href="https://learn.microsoft.com/en-us/sql/relational-databases/performance/monitoring-performance-by-using-the-query-store">Monitor performance with Query Store</a></li>
+  </ul></div></aside>
+  <footer><div class="wrap">GitHub Copilot proposes. Query Store and SQL MCP measure. The DBA decides. Never run the workshop workload against production.</div></footer>
+  <script>
+  (() => {
+    const sections = [...document.querySelectorAll("section.chapter")];
+    const links = [...document.querySelectorAll(".step-link")];
+    if (!("IntersectionObserver" in window)) return;
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      links.forEach((link) => {
+        const active = link.getAttribute("href") === `#${visible.target.id}`;
+        if (active) link.setAttribute("aria-current", "step");
+        else link.removeAttribute("aria-current");
+      });
+    }, { rootMargin: "-20% 0px -60% 0px", threshold: [0, 0.2, 0.5] });
+    sections.forEach((section) => observer.observe(section));
+  })();
+  </script>
 </body>
 </html>
