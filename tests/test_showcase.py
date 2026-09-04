@@ -214,6 +214,32 @@ class ShowcaseContractTests(unittest.TestCase):
         hosts = set(re.findall(r'https://([^/"\s]+)', read_page()))
         self.assertEqual(hosts, {"github.com", "learn.microsoft.com"})
 
+    def test_pages_workflow_deploys_exact_static_artifact(self) -> None:
+        workflow_path = ROOT / ".github" / "workflows" / "pages.yml"
+        self.assertTrue(workflow_path.is_file())
+        workflow = workflow_path.read_text(encoding="utf-8")
+        for token in (
+            "mkdir -p site/assets",
+            "cp index.html site/index.html",
+            "cp -R assets/. site/assets/",
+            "touch site/.nojekyll",
+            "actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d",
+            "actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9",
+            "actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346",
+            "path: site",
+        ):
+            self.assertIn(token, workflow)
+        _, build_marker, after_build = workflow.partition("  build:")
+        build_job, deploy_marker, _ = after_build.partition("  deploy:")
+        self.assertTrue(build_marker, "Pages workflow is missing the build job")
+        self.assertTrue(deploy_marker, "Pages workflow is missing the deploy job")
+        self.assertIn("permissions:\n      contents: read\n      pages: read", build_job)
+        self.assertNotIn("id-token:", build_job)
+        action_pins = re.findall(r"uses:\s+[\w-]+/[\w-]+@([^\s]+)", workflow)
+        self.assertTrue(action_pins)
+        self.assertTrue(all(re.fullmatch(r"[0-9a-f]{40}", pin) for pin in action_pins))
+        self.assertNotIn("actions/jekyll-build-pages", workflow.lower())
+
 
 if __name__ == "__main__":
     unittest.main()
