@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 900" role="img" aria-labelledby="title desc">
+  <title id="title">GitHub Copilot in SSMS getting-started workflow</title>
+  <desc id="desc">An original workshop illustration showing four steps: install SSMS 22 with AI Assistance, connect a query editor, sign in from the Copilot badge, then use Chat, Agent mode, skills, and MCP tools.</desc>
+  <rect width="1500" height="900" fill="#f7f4ef"/>
+  <rect x="55" y="50" width="1390" height="800" rx="24" fill="#ffffff" stroke="#dedede" stroke-width="3"/>
+  <rect x="55" y="50" width="1390" height="70" rx="24" fill="#f5f5f5"/>
+  <circle cx="95" cy="85" r="9" fill="#b11f4b"/>
+  <circle cx="125" cy="85" r="9" fill="#f59e0b"/>
+  <circle cx="155" cy="85" r="9" fill="#16a34a"/>
+  <text x="205" y="95" fill="#242424" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700">SQL Server Management Studio 22</text>
+
+  <rect x="90" y="155" width="300" height="645" rx="16" fill="#fcfbf8" stroke="#dedede" stroke-width="2"/>
+  <text x="125" y="210" fill="#b11f4b" font-family="Consolas, monospace" font-size="20" font-weight="700">OBJECT EXPLORER</text>
+  <text x="125" y="270" fill="#242424" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700">AdventureWorks2022</text>
+  <g fill="#5c5c5c" font-family="Segoe UI, Arial, sans-serif" font-size="23">
+    <text x="145" y="325">▸ Tables</text><text x="145" y="370">▸ Views</text><text x="145" y="415">▸ Programmability</text><text x="145" y="460">▸ Query Store</text><text x="145" y="505">▸ Security</text>
+  </g>
+  <rect x="125" y="565" width="230" height="92" rx="12" fill="#f5f5f5" stroke="#919191"/>
+  <text x="240" y="600" text-anchor="middle" fill="#242424" font-family="Consolas, monospace" font-size="18">ACTIVE CONTEXT</text>
+  <text x="240" y="632" text-anchor="middle" fill="#0078d4" font-family="Consolas, monospace" font-size="18">connected database</text>
+
+  <rect x="430" y="155" width="560" height="645" rx="16" fill="#fcfbf8" stroke="#dedede" stroke-width="2"/>
+  <text x="475" y="215" fill="#b11f4b" font-family="Consolas, monospace" font-size="20" font-weight="700">GET STARTED</text>
+  <text x="475" y="268" fill="#242424" font-family="Segoe UI, Arial, sans-serif" font-size="39" font-weight="700">Copilot in your SQL workflow</text>
+  <line x1="515" y1="345" x2="905" y2="345" stroke="#dedede" stroke-width="3"/>
+  <line x1="515" y1="345" x2="515" y2="690" stroke="#dedede" stroke-width="3"/>
+  <g font-family="Segoe UI, Arial, sans-serif">
+    <circle cx="515" cy="370" r="27" fill="#b11f4b"/><text x="515" y="379" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="700">1</text>
+    <text x="570" y="365" fill="#242424" font-size="27" font-weight="700">Install AI Assistance</text><text x="570" y="397" fill="#5c5c5c" font-size="20">Modify SSMS 22 in Visual Studio Installer.</text>
+    <circle cx="515" cy="475" r="27" fill="#b11f4b"/><text x="515" y="484" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="700">2</text>
+    <text x="570" y="470" fill="#242424" font-size="27" font-weight="700">Connect a query editor</text><text x="570" y="502" fill="#5c5c5c" font-size="20">The active database supplies context.</text>
+    <circle cx="515" cy="580" r="27" fill="#b11f4b"/><text x="515" y="589" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="700">3</text>
+    <text x="570" y="575" fill="#242424" font-size="27" font-weight="700">Open the Copilot badge</text><text x="570" y="607" fill="#5c5c5c" font-size="20">Sign in with a GitHub account.</text>
+    <circle cx="515" cy="685" r="27" fill="#b11f4b"/><text x="515" y="694" text-anchor="middle" fill="#ffffff" font-size="24" font-weight="700">4</text>
+    <text x="570" y="680" fill="#242424" font-size="27" font-weight="700">Ask, edit, or use tools</text><text x="570" y="712" fill="#5c5c5c" font-size="20">Chat · Agent · Skills · MCP</text>
+  </g>
+
+  <rect x="1030" y="155" width="375" height="645" rx="16" fill="#fcfbf8" stroke="#dedede" stroke-width="2"/>
+  <text x="1070" y="210" fill="#b11f4b" font-family="Consolas, monospace" font-size="20" font-weight="700">COPILOT CHAT</text>
+  <rect x="1070" y="250" width="295" height="110" rx="12" fill="#f5f5f5" stroke="#dedede"/>
+  <text x="1095" y="290" fill="#242424" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700">“Explain this schema.”</text>
+  <text x="1095" y="325" fill="#5c5c5c" font-family="Segoe UI, Arial, sans-serif" font-size="18">Active editor + connection</text>
+  <rect x="1070" y="390" width="295" height="190" rx="12" fill="#ffffff" stroke="#dedede"/>
+  <text x="1095" y="432" fill="#242424" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="700">Grounded response</text>
+  <g fill="#5c5c5c" font-family="Segoe UI, Arial, sans-serif" font-size="18">
+    <text x="1095" y="472">• Tables and relationships</text><text x="1095" y="507">• T-SQL suggestions</text><text x="1095" y="542">• Plan observations</text>
+  </g>
+  <rect x="1070" y="615" width="295" height="66" rx="12" fill="#b11f4b"/>
+  <text x="1218" y="657" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Arial, sans-serif" font-size="21" font-weight="700">Review before applying</text>
+  <text x="1218" y="730" text-anchor="middle" fill="#5c5c5c" font-family="Consolas, monospace" font-size="17">SQL permissions remain authoritative</text>
+</svg>
