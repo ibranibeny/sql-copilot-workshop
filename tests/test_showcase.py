@@ -193,6 +193,11 @@ class ShowcaseContractTests(unittest.TestCase):
         mobile = page.split("@media (max-width: 640px)", 1)[1]
         self.assertIn(".step-rail { margin-inline: -0.75rem; padding-inline: 0.75rem; }", mobile)
 
+    def test_tablet_and_mobile_anchor_targets_clear_sticky_rail(self) -> None:
+        page = read_page()
+        tablet = page.split("@media (max-width: 900px)", 1)[1].split("@media (max-width: 640px)", 1)[0]
+        self.assertIn(".chapter { scroll-margin-top: 5rem; }", tablet)
+
     def test_links_only_to_expected_first_party_and_repository_hosts(self) -> None:
         hosts = set(re.findall(r'https://([^/"\s]+)', read_page()))
         self.assertEqual(hosts, {"github.com", "learn.microsoft.com"})
