@@ -370,27 +370,7 @@
     padding: 1rem;
     background: var(--cp-bg-elevated);
   }
-  .architecture-frame svg { display: block; min-width: 48rem; width: 100%; height: auto; }
-  .arch-edge { fill: none; stroke: var(--cp-border-strong); stroke-width: 2; }
-  .arch-arrow { fill: var(--cp-border-strong); }
-  .arch-node { fill: var(--cp-surface); stroke: var(--cp-border-strong); stroke-width: 2; }
-  .arch-node-public { fill: var(--cp-highlight); stroke: var(--cp-danger); }
-  .arch-node-admin { fill: var(--cp-accent-soft); stroke: var(--cp-accent); }
-  .arch-node-copilot { fill: var(--cp-surface-soft); stroke: var(--cp-link); }
-  .arch-node-sql { fill: var(--cp-surface-soft); stroke: var(--cp-success); }
-  .arch-node-data { fill: var(--cp-surface); stroke: var(--cp-warning); }
-  .arch-label {
-    fill: var(--cp-text);
-    font-family: Consolas, "Courier New", Courier, monospace;
-    font-size: 12px;
-    text-anchor: middle;
-  }
-  .arch-small, .arch-edge-label {
-    fill: var(--cp-text-muted);
-    font-family: Consolas, "Courier New", Courier, monospace;
-    font-size: 10px;
-    text-anchor: middle;
-  }
+  .architecture-frame img { display: block; min-width: 48rem; width: 100%; height: auto; }
   .demo-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(15rem, 0.5fr); gap: 1rem; align-items: start; }
   .demo-notes { display: grid; gap: 0.75rem; }
   .demo-note { border: 1px solid var(--cp-border); border-radius: 0.625rem; padding: 0.9rem; background: var(--cp-surface); }
@@ -420,9 +400,6 @@
     .step-label { display: none; }
   }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-  @media (forced-colors: active) {
-    .arch-node, .arch-node-public, .arch-node-admin, .arch-node-copilot, .arch-node-sql, .arch-node-data { fill: Canvas; stroke: CanvasText; }
-  }
   @media print {
     .step-rail, .hero-actions { display: none; }
     .guided-layout { grid-template-columns: 1fr; }
@@ -437,7 +414,7 @@
       <div>
         <p class="eyebrow">L300 guided workshop · SSMS + GitHub Copilot</p>
         <h1>A slow report. An unfamiliar schema. One evidence-backed decision.</h1>
-        <p class="hero-lede">The finance team’s month-end report is slowing down. Maya, a database platform engineer, must understand a database she did not design, explain the bottleneck, and recommend a safer query—without changing a single business result. GitHub Copilot helps her reason inside SSMS; execution plans and Query Store provide the evidence.</p>
+        <p class="hero-lede">The finance team at Contoso AI reports that its month-end process is slowing down. The database platform team must understand a database it did not design, explain the bottleneck, and recommend a safer query—without changing a single business result. GitHub Copilot helps the team reason inside SSMS; execution plans and Query Store provide the evidence.</p>
         <div class="hero-actions">
           <a class="button button-primary" href="#overview">Start Step 01</a>
           <a class="button button-secondary" href="https://github.com/ibranibeny/mcp-sql-query-store-workshop">Open source repository</a>
@@ -469,18 +446,23 @@
     </nav>
     <div class="chapters">
       <section id="overview" class="chapter" data-step="01">
-        <header class="chapter-header"><div class="chapter-badge">01</div><div><p class="step-kicker">GitHub Copilot overview</p><h2>Meet Maya, the database platform engineer</h2><p class="chapter-intro">At 08:30, Finance reports that the month-end sales process is taking longer with every data load. Maya inherits the incident—and an AdventureWorks database she has never supported before.</p></div></header>
-        <p class="narrative"><strong>Maya does not ask Copilot to “fix the database.”</strong> She asks it to help her understand the system, formulate testable explanations, and draft a candidate she can review. At L300, the goal is to understand where AI assistance fits in the engineering decision—not to study model internals.</p>
+        <header class="chapter-header"><div class="chapter-badge">01</div><div><p class="step-kicker">GitHub Copilot overview</p><h2>Meet the Contoso AI database platform team</h2><p class="chapter-intro">At 08:30, Finance at Contoso AI reports that the month-end sales process is taking longer with every data load. The database platform team inherits the incident—and an AdventureWorks database it has never supported before.</p></div></header>
+        <p class="narrative"><strong>The Contoso AI team does not ask Copilot to “fix the database.”</strong> It asks Copilot to help understand the system, formulate testable explanations, and draft a candidate for review. At L300, the goal is to understand where AI assistance fits in the engineering decision—not to study model internals.</p>
         <div class="grid grid-3">
-          <article class="card"><span class="status-chip">Understand</span><h3>Turn questions into context</h3><p>Copilot helps Maya explain objects, relationships, and T-SQL while she stays inside the database workflow.</p></article>
-          <article class="card"><span class="status-chip">Propose</span><h3>Draft a change, not a verdict</h3><p>Copilot can suggest a rewrite or document a plan, but Maya reviews every assumption and chooses what to test.</p></article>
+          <article class="card"><span class="status-chip">Understand</span><h3>Turn questions into context</h3><p>Copilot helps the Contoso AI team explain objects, relationships, and T-SQL while it stays inside the database workflow.</p></article>
+          <article class="card"><span class="status-chip">Propose</span><h3>Draft a change, not a verdict</h3><p>Copilot can suggest a rewrite or document a plan, but the team reviews every assumption and chooses what to test.</p></article>
           <article class="card"><span class="status-chip">Control</span><h3>Keep authority with the DBA</h3><p>The connected login, approval prompts, correctness tests, and deployment gates—not the AI model—control what can happen.</p></article>
         </div>
         <div class="note"><strong>Evidence rule:</strong> Copilot output is a hypothesis, not proof. Query Store, actual execution plans, SSMS result comparison, and result-equivalence tests decide whether a change is safe.</div>
+        <p class="narrative">Microsoft Learn describes several Copilot surfaces—Chat, inline Chat, completions, Next Edit Suggestions, Agent mode, skills, and MCP servers. The architecture reference discovered through WebIQ reinforces the same pattern: user intent and editor context flow to the assistant, but the generated response returns to a human review and evidence loop before it becomes a decision.</p>
+        <figure class="media-frame">
+          <a href="assets/github-copilot-ssms-context.drawio.svg"><img src="assets/github-copilot-ssms-context.drawio.svg" alt="GitHub Copilot in SSMS context and decision flow" width="1004" height="505" loading="lazy"></a>
+          <figcaption>Original Draw.io context architecture based on <a href="https://learn.microsoft.com/en-us/ssms/github-copilot/overview">Microsoft Learn’s GitHub Copilot in SSMS overview</a> and an architecture reference discovered through WebIQ. The exported SVG contains embedded Draw.io XML and remains editable.</figcaption>
+        </figure>
       </section>
       <section id="ssms" class="chapter" data-step="02">
-        <header class="chapter-header"><div class="chapter-badge">02</div><div><p class="step-kicker">GitHub Copilot in SSMS</p><h2>Maya opens SSMS and asks the first question</h2><p class="chapter-intro">She connects a query editor to AdventureWorks2022, opens the Copilot badge, and asks for a plain-language map of the database. The active editor, selected T-SQL, and database connection give Copilot the working context.</p></div></header>
-        <p class="narrative">This is the practical value of Copilot in SSMS: Maya can move from a business question to schema exploration, query explanation, and a reviewed edit without switching tools. The conversation stays useful because she scopes each prompt to the connected database and verifies every returned claim.</p>
+        <header class="chapter-header"><div class="chapter-badge">02</div><div><p class="step-kicker">GitHub Copilot in SSMS</p><h2>Contoso AI opens SSMS and asks the first question</h2><p class="chapter-intro">A database engineer connects a query editor to AdventureWorks2022, opens the Copilot badge, and asks for a plain-language map of the database. The active editor, selected T-SQL, and database connection give Copilot the working context.</p></div></header>
+        <p class="narrative">This is the practical value of Copilot in SSMS: the Contoso AI team can move from a business question to schema exploration, query explanation, and a reviewed edit without switching tools. The conversation stays useful because the team scopes each prompt to the connected database and verifies every returned claim.</p>
         <figure class="media-frame">
           <img src="assets/copilot-ssms-workflow.svg" alt="Original visual guide to starting GitHub Copilot in SSMS" width="1500" height="900" loading="lazy">
           <figcaption>Original workshop illustration based on <a href="https://learn.microsoft.com/en-us/ssms/github-copilot/get-started">Microsoft Learn guidance</a> discovered through WebIQ. It is not a redistributed Microsoft screenshot.</figcaption>
@@ -494,10 +476,11 @@
           <li><strong>MCP servers</strong><span>Agent mode can discover and call MCP tools. Tools are disabled until explicitly enabled and remain permission-constrained.</span></li>
         </ul>
         <div class="note"><strong>Security boundary:</strong> Ask mode’s read-only classification is not a security boundary. SQL Server permissions remain authoritative; use least-privilege <code>SELECT</code> and <code>EXECUTE</code> grants.</div>
+        <p class="narrative">Context behaves differently by mode. Chat and inline Chat can use selected text, the active file, and the active database connection. Agent mode can execute a multi-step workflow with approval, but Microsoft recommends naming the database or server explicitly so tool selection is unambiguous. In both cases, Copilot has no separate elevated identity.</p>
       </section>
       <section id="use-case" class="chapter" data-step="03">
-        <header class="chapter-header"><div class="chapter-badge">03</div><div><p class="step-kicker">AI schema exploration and SQL query optimization</p><h2>The month-end slowdown becomes the case</h2><p class="chapter-intro">Maya discovers that the report reads an 8,000,000-row fact table through a procedure that converts dates row by row, carries a wide payload, aggregates late, and visits the source more than once.</p></div></header>
-        <p class="narrative"><strong>The story changes from “the database is slow” to a testable hypothesis.</strong> Maya expects the current shape to increase scans and query-workspace memory. She now needs evidence that identifies the expensive operator, preserves the output contract, and shows whether a narrower access path actually improves the controlled workload.</p>
+        <header class="chapter-header"><div class="chapter-badge">03</div><div><p class="step-kicker">AI schema exploration and SQL query optimization</p><h2>The month-end slowdown becomes the case</h2><p class="chapter-intro">The Contoso AI team discovers that the report reads an 8,000,000-row fact table through a procedure that converts dates row by row, carries a wide payload, aggregates late, and visits the source more than once.</p></div></header>
+        <p class="narrative"><strong>The story changes from “the database is slow” to a testable hypothesis.</strong> Contoso AI expects the current shape to increase scans and query-workspace memory. The team now needs evidence that identifies the expensive operator, preserves the output contract, and shows whether a narrower access path actually improves the controlled workload.</p>
         <div class="story-flow" aria-label="Use-case sequence">
           <div class="story-stage"><b>Explore</b><span>Ask Copilot how many tables exist, what <code>Sales.Store</code> represents, and how key entities relate.</span></div>
           <div class="story-stage"><b>Inspect</b><span>Read <code>lab.FactSales</code> and <code>lab.usp_MonthEndSalesBaseline</code>; attach the query or plan as context.</span></div>
@@ -508,9 +491,10 @@
           <article class="card"><span class="status-chip">Schema exploration</span><h3>From catalog to business meaning</h3><p>Copilot can summarize objects and relationships, but the active login controls what it can inspect. In the workshop, schema exploration is connected to AdventureWorks2022 and reviewed by the DBA.</p></article>
           <article class="card"><span class="status-chip">Query optimization</span><h3>From symptom to verified change</h3><p>Query Store narrows attention to top resource consumers and wait categories. SSMS exposes the actual plan; Copilot turns that evidence into ranked hypotheses and candidate changes.</p></article>
         </div>
+        <p class="narrative">Contoso AI separates observation from interpretation. High reads, a large memory grant, or a scan in the actual plan are observations; “the date conversion and wide materialization cause the pressure” is a hypothesis. The team changes one bounded variable, preserves the result contract, and compares the measured outcome before accepting the explanation.</p>
       </section>
       <section id="deploy" class="chapter" data-step="04">
-        <header class="chapter-header"><div class="chapter-badge">04</div><div><p class="step-kicker">Deploy the workshop step by step</p><h2>Before Maya changes a query, she builds the lab</h2><p class="chapter-intro">Production is not the place to learn how a candidate behaves. Maya creates a disposable Azure environment where the data shape, security boundary, query settings, and measurement path are known before any tuning begins.</p></div></header>
+        <header class="chapter-header"><div class="chapter-badge">04</div><div><p class="step-kicker">Deploy the workshop step by step</p><h2>Before Contoso AI changes a query, the team builds the lab</h2><p class="chapter-intro">Production is not the place to learn how a candidate behaves. The Contoso AI team creates a disposable Azure environment where the data shape, security boundary, query settings, and measurement path are known before any tuning begins.</p></div></header>
         <p class="narrative"><strong>The L300 decision is not “which command creates a VM?”</strong> It is how to make the experiment repeatable: pin reviewed source, confirm identity and cost, validate prerequisites, deploy through explicit gates, and accept only positive readiness.</p>
         <div class="story-flow" aria-label="Deployment decision sequence">
           <div class="story-stage"><b>Pin</b><span>Bind both VMs to one reviewed commit.</span></div>
@@ -629,32 +613,21 @@ INCLUDE (CustomerID, ProductID, OrderQty, UnitPrice, SalesAmount);
             </div>
           </details>
         <div class="note"><strong>Target, not a result:</strong> the workshop aims to move regular query-workspace grant utilization from a 75–85% baseline band toward a 35–45% optimized band. Record the actual measured result even when it misses the target.</div>
+          <p class="narrative">The deployment gates make the later comparison credible. Contoso AI knows which source revision created the environment, which network boundary was approved, which database marker is present, and which readiness checks passed. That traceability lets reviewers distinguish a measured improvement from an accidental configuration change.</p>
       </section>
       <section id="architecture" class="chapter" data-step="05">
-        <header class="chapter-header"><div class="chapter-badge">05</div><div><p class="step-kicker">Architecture demo</p><h2>Maya traces where trust begins and ends</h2><p class="chapter-intro">A security reviewer asks a simple question: “What can Copilot actually reach?” Maya uses the architecture to answer without hand-waving. The facilitator reaches one public administration endpoint; SQL Server remains private; SSMS connects over encrypted private TDS.</p></div></header>
+        <header class="chapter-header"><div class="chapter-badge">05</div><div><p class="step-kicker">Architecture demo</p><h2>Contoso AI traces where trust begins and ends</h2><p class="chapter-intro">A security reviewer asks a simple question: “What can Copilot actually reach?” The Contoso AI team uses the architecture to answer without hand-waving. The facilitator reaches one public administration endpoint; SQL Server remains private; SSMS connects over encrypted private TDS.</p></div></header>
         <p class="narrative"><strong>The key L300 insight is separation of responsibilities.</strong> Network controls limit reachability, SQL permissions limit data actions, SSMS supplies working context, and Copilot assists the human. None of those layers silently replaces another.</p>
         <figure class="architecture-frame" tabindex="0" aria-label="Scrollable colored architecture diagram">
-          <svg viewBox="0 0 1120 390" role="img" aria-labelledby="architecture-title architecture-desc">
-            <title id="architecture-title">SSMS and GitHub Copilot workshop architecture</title>
-            <desc id="architecture-desc">The facilitator connects by restricted RDP to a Windows 11 administration VM. SQL Server Management Studio hosts GitHub Copilot, including Chat, Agent mode, skills, and optional MCP servers. SSMS connects over encrypted private TDS to SQL Server 2022. Query Store persists plans, runtime statistics, and wait statistics. The SQL VM has no public IP.</desc>
-            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path class="arch-arrow" d="M0,0 L0,6 L9,3 z"></path></marker></defs>
-            <path class="arch-edge" d="M175 95 L230 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M390 95 L445 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M665 95 L720 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M880 95 L935 95" marker-end="url(#arrow)"></path><path class="arch-edge" d="M555 145 L555 250" marker-end="url(#arrow)"></path><path class="arch-edge" d="M800 135 L800 250" marker-end="url(#arrow)"></path><path class="arch-edge" d="M1015 145 L1015 250" marker-end="url(#arrow)"></path>
-            <text class="arch-edge-label" x="202" y="82">RDP 3389 · /32</text><text class="arch-edge-label" x="692" y="82">active database context</text><text class="arch-edge-label" x="907" y="82">TLS TDS 1433</text>
-            <rect class="arch-node arch-node-public" x="25" y="55" width="150" height="80" rx="10"></rect><text class="arch-label" x="100" y="89">Facilitator</text><text class="arch-small" x="100" y="109">approved public /32</text>
-            <rect class="arch-node arch-node-public" x="230" y="55" width="160" height="80" rx="10"></rect><text class="arch-label" x="310" y="89">Admin public IP</text><text class="arch-small" x="310" y="109">RDP only</text>
-            <rect class="arch-node arch-node-admin" x="445" y="45" width="220" height="100" rx="10"></rect><text class="arch-label" x="555" y="78">Windows 11 admin VM</text><text class="arch-small" x="555" y="99">private administration tier</text><text class="arch-small" x="555" y="117">10.20.1.0/24</text>
-            <rect class="arch-node arch-node-copilot" x="720" y="55" width="160" height="80" rx="10"></rect><text class="arch-label" x="800" y="89">SSMS + GitHub Copilot</text><text class="arch-small" x="800" y="109">Chat · Agent · Skills · MCP</text>
-            <rect class="arch-node arch-node-sql" x="935" y="45" width="160" height="100" rx="10"></rect><text class="arch-label" x="1015" y="77">SQL 2022 VM</text><text class="arch-small" x="1015" y="98">10.20.2.10</text><text class="arch-small" x="1015" y="116">no public IP</text>
-            <rect class="arch-node" x="445" y="250" width="220" height="80" rx="10"></rect><text class="arch-label" x="555" y="284">NAT Gateway</text><text class="arch-small" x="555" y="304">outbound only</text>
-            <rect class="arch-node arch-node-data" x="720" y="250" width="160" height="80" rx="10"></rect><text class="arch-label" x="800" y="284">Reader identity</text><text class="arch-small" x="800" y="304">SELECT + EXECUTE only</text>
-            <rect class="arch-node arch-node-data" x="935" y="250" width="160" height="80" rx="10"></rect><text class="arch-label" x="1015" y="284">Query Store</text><text class="arch-small" x="1015" y="304">plans · runtime · waits</text>
-          </svg>
-          <figcaption>Colored trust-boundary view: public ingress uses the alert treatment, administration uses the accent treatment, SSMS + GitHub Copilot uses link blue, private SQL uses success green, and Query Store evidence uses warning gold.</figcaption>
+          <a href="assets/contoso-ai-ssms-azure-architecture.drawio.svg"><img src="assets/contoso-ai-ssms-azure-architecture.drawio.svg" alt="Contoso AI Azure architecture for GitHub Copilot in SSMS" width="1144" height="738" loading="lazy"></a>
+          <figcaption>Editable Draw.io SVG using <a href="https://learn.microsoft.com/en-us/azure/architecture/icons/">Official Azure Architecture Icons</a> for Azure Virtual Network, Virtual Machines, Public IP, Network Security Groups, Private DNS, NAT Gateway, and SQL Server. Product labels remain next to unmodified icons as required by Microsoft’s diagram guidance.</figcaption>
         </figure>
+        <p class="narrative">Read the arrows from initiator to dependency: the facilitator enters through the public IP and Admin NSG; the admin VM hosts SSMS and Copilot; encrypted TDS crosses only to the SQL NSG and private SQL VM. Query Store is drawn inside SQL Server because it is an engine capability, not a separate Azure resource.</p>
+        <p class="narrative">Egress is a different flow. Both subnets use NAT Gateway to reach approved Microsoft, GitHub, and NuGet endpoints, while no inbound internet path reaches SQL Server. The diagram’s native <code>.drawio</code> source is also published, and the SVG retains embedded Draw.io XML for later editing.</p>
       </section>
       <section id="demo" class="chapter" data-step="06">
-        <header class="chapter-header"><div class="chapter-badge">06</div><div><p class="step-kicker">SSMS schema exploration demo</p><h2>Maya can now explain why the query is slow</h2><p class="chapter-intro">The investigation closes where it began: inside SSMS. The attached workshop capture shows Copilot answering an Indonesian schema-quality prompt against AdventureWorks2022 while Object Explorer and the approval boundary remain visible.</p></div></header>
-        <p class="narrative">Maya’s final recommendation is no longer “Copilot says this index will help.” She can describe the schema, point to the baseline’s access pattern, show the actual plan and Query Store evidence, explain the candidate’s trade-offs, and name the rollback path.</p>
+        <header class="chapter-header"><div class="chapter-badge">06</div><div><p class="step-kicker">SSMS schema exploration demo</p><h2>Contoso AI can now explain why the query is slow</h2><p class="chapter-intro">The investigation closes where it began: inside SSMS. The attached workshop capture shows Copilot answering an Indonesian schema-quality prompt against AdventureWorks2022 while Object Explorer and the approval boundary remain visible.</p></div></header>
+        <p class="narrative">Contoso AI’s final recommendation is no longer “Copilot says this index will help.” The team can describe the schema, point to the baseline’s access pattern, show the actual plan and Query Store evidence, explain the candidate’s trade-offs, and name the rollback path.</p>
         <div class="demo-layout">
           <figure class="media-frame">
             <a href="assets/ssms-copilot-schema-exploration.png"><img src="assets/ssms-copilot-schema-exploration.png" alt="GitHub Copilot in SSMS reviewing the Sales.Store schema" width="1914" height="877" loading="lazy"></a>
@@ -667,7 +640,8 @@ INCLUDE (CustomerID, ProductID, OrderQty, UnitPrice, SalesAmount);
             <div class="demo-note"><b>4 · Next prompt</b><span>Ask Copilot to produce the read-only query used for each claim, then verify it before moving to optimization.</span></div>
           </aside>
         </div>
-        <div class="note"><strong>End of story:</strong> GitHub Copilot accelerated understanding and drafting. Maya’s evidence—permissions, execution plans, Query Store history, equivalence validation, and controlled A/B measurement—made the decision defensible.</div>
+        <div class="note"><strong>End of story:</strong> GitHub Copilot accelerated understanding and drafting. Contoso AI’s evidence—permissions, execution plans, Query Store history, equivalence validation, and controlled A/B measurement—made the decision defensible.</div>
+        <p class="narrative">The screenshot is not treated as proof by itself. It shows the interaction pattern: connected context, a scoped prompt, a generated explanation, and an approval request. Contoso AI asks for the query behind each claim, runs it with the intended identity, and captures the result before relying on the summary.</p>
       </section>
     </div>
   </main>
