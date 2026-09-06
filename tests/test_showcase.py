@@ -123,6 +123,20 @@ class ShowcaseContractTests(unittest.TestCase):
             self.assertIn(f'data-step="{number}"', page)
             self.assertIn(title, page)
 
+    def test_step_rail_labels_follow_narrative_chapter_titles(self) -> None:
+        page = read_page()
+        expected = (
+            ("Meet Contoso AI", "Step 1: Meet the Contoso AI database platform team"),
+            ("Ask the first question", "Step 2: Contoso AI opens SSMS and asks the first question"),
+            ("Month-end case", "Step 3: The month-end slowdown becomes the case"),
+            ("Build the lab", "Step 4: Before Contoso AI changes a query, the team builds the lab"),
+            ("Trace trust boundaries", "Step 5: Contoso AI traces where trust begins and ends"),
+            ("Explain the slow query", "Step 6: Contoso AI can now explain why the query is slow"),
+        )
+        for visible_label, accessible_name in expected:
+            self.assertIn(f'<span class="step-label">{visible_label}</span>', page)
+            self.assertIn(f'aria-label="{accessible_name}"', page)
+
     def test_uses_local_microsoft_and_attached_screenshots(self) -> None:
         parser = parse_page()
         by_src = {image.get("src", ""): image for image in parser.images}
