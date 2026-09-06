@@ -234,9 +234,9 @@ class ShowcaseContractTests(unittest.TestCase):
             ET.parse(source_path)
             for label in labels:
                 self.assertIn(label, source)
-            azure_svg = (ROOT / "assets" / "contoso-ai-ssms-azure-architecture.drawio.svg").read_text(encoding="utf-8")
-            self.assertNotIn('xlink:href="data:image/png"', azure_svg)
-            self.assertGreaterEqual(azure_svg.count('xlink:href="data:image/png;base64,'), 7)
+        azure_svg = (ROOT / "assets" / "contoso-ai-ssms-azure-architecture.drawio.svg").read_text(encoding="utf-8")
+        self.assertNotIn('xlink:href="data:image/png"', azure_svg)
+        self.assertGreaterEqual(azure_svg.count('xlink:href="data:image/png;base64,'), 7)
         self.assertIn("architecture reference discovered through WebIQ", page)
         self.assertIn("Official Azure Architecture Icons", page)
         self.assertIn("https://learn.microsoft.com/en-us/azure/architecture/icons/", page)
