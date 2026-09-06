@@ -62,12 +62,32 @@ def contrast_ratio(foreground: str, background: str) -> float:
 
 
 class ShowcaseContractTests(unittest.TestCase):
+    def test_workshop_is_a_continuous_l300_narrative(self) -> None:
+        page = read_page()
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        for token in (
+            'content="L300"',
+            'class="level-chip">L300',
+            "A slow report. An unfamiliar schema. One evidence-backed decision.",
+            "Meet Maya, the database platform engineer",
+            "Maya opens SSMS",
+            "Before Maya changes a query",
+            "Maya can now explain why",
+            "What you will be able to do",
+            "Lab detail: deployment commands",
+            "Lab detail: baseline and candidate SQL",
+        ):
+            self.assertIn(token, page)
+        self.assertIn("L300", readme)
+        self.assertNotIn("L400", page)
+        self.assertNotIn("L400", readme)
+
     def test_primary_story_is_ssms_and_github_copilot_not_sql_mcp(self) -> None:
         page = read_page()
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn("<title>GitHub Copilot in SSMS Workshop</title>", page)
-        self.assertIn("Six-step guided workshop · SSMS + GitHub Copilot", page)
-        self.assertIn("execution plans and Query Store evidence", page)
+        self.assertIn("L300 guided workshop · SSMS + GitHub Copilot", page)
+        self.assertIn("execution plans and Query Store provide the evidence", page)
         self.assertIn("SSMS + GitHub Copilot", page)
         self.assertIn("MCP servers", page)
         self.assertNotRegex(page, r"(?i)(?:Microsoft\s+|DAB\s+)?SQL\s+MCP")
@@ -89,12 +109,12 @@ class ShowcaseContractTests(unittest.TestCase):
         self.assertEqual(parser.step_hrefs, [f"#{step}" for step in EXPECTED_STEPS])
         page = read_page()
         for number, title in (
-            ("01", "GitHub Copilot overview"),
-            ("02", "GitHub Copilot in SSMS"),
-            ("03", "AI schema exploration and SQL query optimization"),
-            ("04", "Deploy the workshop step by step"),
-            ("05", "Architecture demo"),
-            ("06", "SSMS schema exploration demo"),
+            ("01", "Meet Maya, the database platform engineer"),
+            ("02", "Maya opens SSMS and asks the first question"),
+            ("03", "The month-end slowdown becomes the case"),
+            ("04", "Before Maya changes a query, she builds the lab"),
+            ("05", "Maya traces where trust begins and ends"),
+            ("06", "Maya can now explain why the query is slow"),
         ):
             self.assertIn(f'data-step="{number}"', page)
             self.assertIn(title, page)
