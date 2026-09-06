@@ -19,6 +19,7 @@ class ShowcaseParser(HTMLParser):
         self.step_hrefs: list[str] = []
         self.step_links: list[dict[str, str]] = []
         self.section_headings: dict[str, str] = {}
+        self.figcaptions: dict[str, str] = {}
         self.images: list[dict[str, str]] = []
         self.scripts: list[dict[str, str]] = []
         self.svgs: list[dict[str, str]] = []
@@ -26,6 +27,8 @@ class ShowcaseParser(HTMLParser):
         self._current_step_link: dict[str, str] | None = None
         self._inside_step_label = False
         self._inside_section_heading = False
+        self._current_figcaption_id = ""
+        self._inside_figcaption = False
         self._text_parts: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -47,6 +50,10 @@ class ShowcaseParser(HTMLParser):
         if tag == "h2" and self._current_section:
             self._inside_section_heading = True
             self._text_parts = []
+        if tag == "figcaption" and values.get("id"):
+            self._current_figcaption_id = values["id"]
+            self._inside_figcaption = True
+            self._text_parts = []
         if tag == "img":
             self.images.append(values)
         if tag == "script":
@@ -55,7 +62,7 @@ class ShowcaseParser(HTMLParser):
             self.svgs.append(values)
 
     def handle_data(self, data: str) -> None:
-        if self._inside_step_label or self._inside_section_heading:
+        if self._inside_step_label or self._inside_section_heading or self._inside_figcaption:
             self._text_parts.append(data)
 
     def handle_endtag(self, tag: str) -> None:
@@ -67,6 +74,11 @@ class ShowcaseParser(HTMLParser):
         elif tag == "h2" and self._inside_section_heading:
             self.section_headings[self._current_section] = "".join(self._text_parts).strip()
             self._inside_section_heading = False
+            self._text_parts = []
+        elif tag == "figcaption" and self._inside_figcaption:
+            self.figcaptions[self._current_figcaption_id] = "".join(self._text_parts).strip()
+            self._current_figcaption_id = ""
+            self._inside_figcaption = False
             self._text_parts = []
         elif tag == "a" and self._current_step_link:
             self._current_step_link = None
@@ -226,6 +238,18 @@ class ShowcaseContractTests(unittest.TestCase):
             )
             declared = (images[src].get("width"), images[src].get("height"))
             self.assertEqual(declared, intrinsic, src)
+
+    def test_drawio_images_reference_detailed_accessible_descriptions(self) -> None:
+        parser = parse_page()
+        images = {image.get("src", ""): image for image in parser.images}
+        for src in (
+            "assets/github-copilot-ssms-context.drawio.svg",
+            "assets/contoso-ai-ssms-azure-architecture.drawio.svg",
+        ):
+            description_id = images[src].get("aria-describedby", "")
+            self.assertTrue(description_id, src)
+            self.assertIn(description_id, parser.figcaptions, src)
+            self.assertGreaterEqual(len(parser.figcaptions[description_id]), 120, src)
 
     def test_drawio_architecture_assets_are_editable_and_attributed(self) -> None:
         page = read_page()
