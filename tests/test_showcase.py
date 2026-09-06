@@ -17,22 +17,61 @@ class ShowcaseParser(HTMLParser):
         super().__init__()
         self.section_ids: list[str] = []
         self.step_hrefs: list[str] = []
+        self.step_links: list[dict[str, str]] = []
+        self.section_headings: dict[str, str] = {}
         self.images: list[dict[str, str]] = []
         self.scripts: list[dict[str, str]] = []
         self.svgs: list[dict[str, str]] = []
+        self._current_section = ""
+        self._current_step_link: dict[str, str] | None = None
+        self._inside_step_label = False
+        self._inside_section_heading = False
+        self._text_parts: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
         if tag == "section" and values.get("id"):
             self.section_ids.append(values["id"])
+            self._current_section = values["id"]
         if tag == "a" and "step-link" in values.get("class", ""):
             self.step_hrefs.append(values.get("href", ""))
+            self._current_step_link = {
+                "href": values.get("href", ""),
+                "label": "",
+                "aria-label": values.get("aria-label", ""),
+            }
+            self.step_links.append(self._current_step_link)
+        if tag == "span" and "step-label" in values.get("class", "") and self._current_step_link:
+            self._inside_step_label = True
+            self._text_parts = []
+        if tag == "h2" and self._current_section:
+            self._inside_section_heading = True
+            self._text_parts = []
         if tag == "img":
             self.images.append(values)
         if tag == "script":
             self.scripts.append(values)
         if tag == "svg":
             self.svgs.append(values)
+
+    def handle_data(self, data: str) -> None:
+        if self._inside_step_label or self._inside_section_heading:
+            self._text_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "span" and self._inside_step_label:
+            assert self._current_step_link is not None
+            self._current_step_link["label"] = "".join(self._text_parts).strip()
+            self._inside_step_label = False
+            self._text_parts = []
+        elif tag == "h2" and self._inside_section_heading:
+            self.section_headings[self._current_section] = "".join(self._text_parts).strip()
+            self._inside_section_heading = False
+            self._text_parts = []
+        elif tag == "a" and self._current_step_link:
+            self._current_step_link = None
+        elif tag == "section":
+            self._current_section = ""
 
 
 def read_page() -> str:
@@ -124,18 +163,31 @@ class ShowcaseContractTests(unittest.TestCase):
             self.assertIn(title, page)
 
     def test_step_rail_labels_follow_narrative_chapter_titles(self) -> None:
-        page = read_page()
-        expected = (
-            ("Meet Contoso AI", "Step 1: Meet the Contoso AI database platform team"),
-            ("Ask the first question", "Step 2: Contoso AI opens SSMS and asks the first question"),
-            ("Month-end case", "Step 3: The month-end slowdown becomes the case"),
-            ("Build the lab", "Step 4: Before Contoso AI changes a query, the team builds the lab"),
-            ("Trace trust boundaries", "Step 5: Contoso AI traces where trust begins and ends"),
-            ("Explain the slow query", "Step 6: Contoso AI can now explain why the query is slow"),
+        parser = parse_page()
+        visible_labels = (
+            "Meet Contoso AI",
+            "Ask the first question",
+            "Month-end case",
+            "Build the lab",
+            "Trace trust boundaries",
+            "Explain the slow query",
         )
-        for visible_label, accessible_name in expected:
-            self.assertIn(f'<span class="step-label">{visible_label}</span>', page)
-            self.assertIn(f'aria-label="{accessible_name}"', page)
+        expected = [
+            (
+                f"#{section_id}",
+                visible_label,
+                f"Step {position}: {parser.section_headings[section_id]}",
+            )
+            for position, (section_id, visible_label) in enumerate(
+                zip(EXPECTED_STEPS, visible_labels, strict=True),
+                start=1,
+            )
+        ]
+        actual = [
+            (link["href"], link["label"], link["aria-label"])
+            for link in parser.step_links
+        ]
+        self.assertEqual(actual, expected)
 
     def test_uses_local_microsoft_and_attached_screenshots(self) -> None:
         parser = parse_page()
