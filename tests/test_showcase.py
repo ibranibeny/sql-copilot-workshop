@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 import struct
 import unittest
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = ROOT / "index.html"
@@ -16,22 +17,73 @@ class ShowcaseParser(HTMLParser):
         super().__init__()
         self.section_ids: list[str] = []
         self.step_hrefs: list[str] = []
+        self.step_links: list[dict[str, str]] = []
+        self.section_headings: dict[str, str] = {}
+        self.figcaptions: dict[str, str] = {}
         self.images: list[dict[str, str]] = []
         self.scripts: list[dict[str, str]] = []
         self.svgs: list[dict[str, str]] = []
+        self._current_section = ""
+        self._current_step_link: dict[str, str] | None = None
+        self._inside_step_label = False
+        self._inside_section_heading = False
+        self._current_figcaption_id = ""
+        self._inside_figcaption = False
+        self._text_parts: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
         if tag == "section" and values.get("id"):
             self.section_ids.append(values["id"])
+            self._current_section = values["id"]
         if tag == "a" and "step-link" in values.get("class", ""):
             self.step_hrefs.append(values.get("href", ""))
+            self._current_step_link = {
+                "href": values.get("href", ""),
+                "label": "",
+                "aria-label": values.get("aria-label", ""),
+            }
+            self.step_links.append(self._current_step_link)
+        if tag == "span" and "step-label" in values.get("class", "") and self._current_step_link:
+            self._inside_step_label = True
+            self._text_parts = []
+        if tag == "h2" and self._current_section:
+            self._inside_section_heading = True
+            self._text_parts = []
+        if tag == "figcaption" and values.get("id"):
+            self._current_figcaption_id = values["id"]
+            self._inside_figcaption = True
+            self._text_parts = []
         if tag == "img":
             self.images.append(values)
         if tag == "script":
             self.scripts.append(values)
         if tag == "svg":
             self.svgs.append(values)
+
+    def handle_data(self, data: str) -> None:
+        if self._inside_step_label or self._inside_section_heading or self._inside_figcaption:
+            self._text_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "span" and self._inside_step_label:
+            assert self._current_step_link is not None
+            self._current_step_link["label"] = "".join(self._text_parts).strip()
+            self._inside_step_label = False
+            self._text_parts = []
+        elif tag == "h2" and self._inside_section_heading:
+            self.section_headings[self._current_section] = "".join(self._text_parts).strip()
+            self._inside_section_heading = False
+            self._text_parts = []
+        elif tag == "figcaption" and self._inside_figcaption:
+            self.figcaptions[self._current_figcaption_id] = "".join(self._text_parts).strip()
+            self._current_figcaption_id = ""
+            self._inside_figcaption = False
+            self._text_parts = []
+        elif tag == "a" and self._current_step_link:
+            self._current_step_link = None
+        elif tag == "section":
+            self._current_section = ""
 
 
 def read_page() -> str:
@@ -62,12 +114,35 @@ def contrast_ratio(foreground: str, background: str) -> float:
 
 
 class ShowcaseContractTests(unittest.TestCase):
+    def test_workshop_is_a_continuous_l300_narrative(self) -> None:
+        page = read_page()
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        for token in (
+            'content="L300"',
+            'class="level-chip">L300',
+            "A slow report. An unfamiliar schema. One evidence-backed decision.",
+            "Meet the Contoso AI database platform team",
+            "Contoso AI opens SSMS",
+            "Before Contoso AI changes a query",
+            "Contoso AI can now explain why",
+            "What you will be able to do",
+            "Lab detail: deployment commands",
+            "Lab detail: baseline and candidate SQL",
+        ):
+            self.assertIn(token, page)
+        self.assertIn("L300", readme)
+        self.assertIn("Contoso AI", readme)
+        self.assertNotIn("Maya", page)
+        self.assertNotIn("Maya", readme)
+        self.assertNotIn("L400", page)
+        self.assertNotIn("L400", readme)
+
     def test_primary_story_is_ssms_and_github_copilot_not_sql_mcp(self) -> None:
         page = read_page()
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn("<title>GitHub Copilot in SSMS Workshop</title>", page)
-        self.assertIn("Six-step guided workshop · SSMS + GitHub Copilot", page)
-        self.assertIn("execution plans and Query Store evidence", page)
+        self.assertIn("L300 guided workshop · SSMS + GitHub Copilot", page)
+        self.assertIn("execution plans and Query Store provide the evidence", page)
         self.assertIn("SSMS + GitHub Copilot", page)
         self.assertIn("MCP servers", page)
         self.assertNotRegex(page, r"(?i)(?:Microsoft\s+|DAB\s+)?SQL\s+MCP")
@@ -89,21 +164,50 @@ class ShowcaseContractTests(unittest.TestCase):
         self.assertEqual(parser.step_hrefs, [f"#{step}" for step in EXPECTED_STEPS])
         page = read_page()
         for number, title in (
-            ("01", "GitHub Copilot overview"),
-            ("02", "GitHub Copilot in SSMS"),
-            ("03", "AI schema exploration and SQL query optimization"),
-            ("04", "Deploy the workshop step by step"),
-            ("05", "Architecture demo"),
-            ("06", "SSMS schema exploration demo"),
+            ("01", "Meet the Contoso AI database platform team"),
+            ("02", "Contoso AI opens SSMS and asks the first question"),
+            ("03", "The month-end slowdown becomes the case"),
+            ("04", "Before Contoso AI changes a query, the team builds the lab"),
+            ("05", "Contoso AI traces where trust begins and ends"),
+            ("06", "Contoso AI can now explain why the query is slow"),
         ):
             self.assertIn(f'data-step="{number}"', page)
             self.assertIn(title, page)
+
+    def test_step_rail_labels_follow_narrative_chapter_titles(self) -> None:
+        parser = parse_page()
+        visible_labels = (
+            "Meet Contoso AI",
+            "Ask the first question",
+            "Month-end case",
+            "Build the lab",
+            "Trace trust boundaries",
+            "Explain the slow query",
+        )
+        expected = [
+            (
+                f"#{section_id}",
+                visible_label,
+                f"Step {position}: {parser.section_headings[section_id]}",
+            )
+            for position, (section_id, visible_label) in enumerate(
+                zip(EXPECTED_STEPS, visible_labels, strict=True),
+                start=1,
+            )
+        ]
+        actual = [
+            (link["href"], link["label"], link["aria-label"])
+            for link in parser.step_links
+        ]
+        self.assertEqual(actual, expected)
 
     def test_uses_local_microsoft_and_attached_screenshots(self) -> None:
         parser = parse_page()
         by_src = {image.get("src", ""): image for image in parser.images}
         expected = {
+            "assets/github-copilot-ssms-context.drawio.svg": "GitHub Copilot in SSMS context and decision flow",
             "assets/copilot-ssms-workflow.svg": "Original visual guide to starting GitHub Copilot in SSMS",
+            "assets/contoso-ai-ssms-azure-architecture.drawio.svg": "Contoso AI Azure architecture for GitHub Copilot in SSMS",
             "assets/ssms-copilot-schema-exploration.png": "GitHub Copilot in SSMS reviewing the Sales.Store schema",
         }
         for src, alt in expected.items():
@@ -120,6 +224,98 @@ class ShowcaseContractTests(unittest.TestCase):
         workflow_svg = (ROOT / "assets/copilot-ssms-workflow.svg").read_text(encoding="utf-8")
         self.assertIn("<svg", workflow_svg)
         self.assertIn("GitHub Copilot in SSMS", workflow_svg)
+
+    def test_drawio_html_dimensions_match_exported_svgs(self) -> None:
+        images = {image.get("src", ""): image for image in parse_page().images}
+        for src in (
+            "assets/github-copilot-ssms-context.drawio.svg",
+            "assets/contoso-ai-ssms-azure-architecture.drawio.svg",
+        ):
+            svg = ET.parse(ROOT / src).getroot()
+            intrinsic = (
+                str(int(float(svg.attrib["width"].removesuffix("px")))),
+                str(int(float(svg.attrib["height"].removesuffix("px")))),
+            )
+            declared = (images[src].get("width"), images[src].get("height"))
+            self.assertEqual(declared, intrinsic, src)
+
+    def test_drawio_images_reference_detailed_accessible_descriptions(self) -> None:
+        parser = parse_page()
+        images = {image.get("src", ""): image for image in parser.images}
+        for src in (
+            "assets/github-copilot-ssms-context.drawio.svg",
+            "assets/contoso-ai-ssms-azure-architecture.drawio.svg",
+        ):
+            description_id = images[src].get("aria-describedby", "")
+            self.assertTrue(description_id, src)
+            self.assertIn(description_id, parser.figcaptions, src)
+            self.assertGreaterEqual(len(parser.figcaptions[description_id]), 120, src)
+
+    def test_drawio_architecture_assets_are_editable_and_attributed(self) -> None:
+        page = read_page()
+        for name, labels in (
+            (
+                "github-copilot-ssms-context.drawio.svg",
+                ("Contoso AI intent", "SSMS context", "GitHub Copilot", "DBA review", "Query Store evidence"),
+            ),
+            (
+                "contoso-ai-ssms-azure-architecture.drawio.svg",
+                ("Azure Virtual Network", "Administration subnet", "SQL subnet", "SSMS + GitHub Copilot", "SQL Server on Azure VM"),
+            ),
+        ):
+            svg_path = ROOT / "assets" / name
+            source_path = svg_path.with_suffix("")
+            content = svg_path.read_text(encoding="utf-8")
+            source = source_path.read_text(encoding="utf-8")
+            self.assertIn("<svg", content)
+            self.assertIn("content=", content)
+            ET.parse(source_path)
+            for label in labels:
+                self.assertIn(label, source)
+        azure_svg = (ROOT / "assets" / "contoso-ai-ssms-azure-architecture.drawio.svg").read_text(encoding="utf-8")
+        self.assertNotIn('xlink:href="data:image/png"', azure_svg)
+        self.assertGreaterEqual(azure_svg.count('xlink:href="data:image/png;base64,'), 7)
+        self.assertIn("architecture reference discovered through WebIQ", page)
+        self.assertIn("Official Azure Architecture Icons", page)
+        self.assertIn("https://learn.microsoft.com/en-us/azure/architecture/icons/", page)
+
+    def test_azure_drawio_arrows_target_the_intended_components(self) -> None:
+        source = ROOT / "assets" / "contoso-ai-ssms-azure-architecture.drawio"
+        document = ET.parse(source)
+        cells = {cell.attrib["id"]: cell for cell in document.findall(".//mxCell") if "id" in cell.attrib}
+        expected = {
+            "a1": ("facilitator", "pip"),
+            "a2": ("pip", "adminnsg"),
+            "a3": ("adminnsg", "adminvm"),
+            "a4": ("adminvm", "sqlnsg"),
+            "a5": ("sqlnsg", "sqlvm"),
+            "a7": ("adminvm", "dns"),
+            "a8": ("adminsubnet", "nat"),
+            "a9": ("sqlsubnet", "nat"),
+            "a10": ("nat", "outbound"),
+        }
+        actual = {
+            edge_id: (cells[edge_id].attrib.get("source"), cells[edge_id].attrib.get("target"))
+            for edge_id in expected
+        }
+        self.assertEqual(actual, expected)
+        self.assertNotIn("a6", cells, "Query Store is contained in SQL Server, not an external arrow target")
+        icon_cells = [cell for cell in cells.values() if "data:image/png%3Bbase64," in cell.attrib.get("style", "")]
+        self.assertGreaterEqual(len(icon_cells), 7)
+
+    def test_each_chapter_has_at_least_two_narrative_paragraphs(self) -> None:
+        page = read_page()
+        for section_id in EXPECTED_STEPS:
+            section = re.search(
+                rf'(?s)<section id="{re.escape(section_id)}".*?</section>',
+                page,
+            )
+            self.assertIsNotNone(section, section_id)
+            self.assertGreaterEqual(
+                section.group(0).count('class="narrative"'),
+                2,
+                f"{section_id} needs at least two narrative paragraphs",
+            )
 
     def test_deployment_chapter_is_complete_and_includes_nonoptimized_sql(self) -> None:
         page = read_page()
@@ -146,15 +342,11 @@ class ShowcaseContractTests(unittest.TestCase):
         parser = parse_page()
         self.assertTrue(parser.scripts)
         self.assertTrue(all(not script.get("src") for script in parser.scripts))
-        self.assertEqual(len(parser.svgs), 1)
-        architecture = parser.svgs[0]
-        self.assertEqual(architecture.get("role"), "img")
-        self.assertTrue(architecture.get("aria-labelledby"))
+        self.assertEqual(len(parser.svgs), 0)
         page = read_page()
-        self.assertIn("architecture-title", page)
-        self.assertIn("architecture-desc", page)
         self.assertIn('class="architecture-frame" tabindex="0"', page)
         self.assertIn('aria-label="Scrollable colored architecture diagram"', page)
+        self.assertIn('assets/contoso-ai-ssms-azure-architecture.drawio.svg', page)
         self.assertNotIn("cdn.jsdelivr.net", page)
         self.assertNotIn("mermaid.esm", page)
 
