@@ -213,6 +213,20 @@ class ShowcaseContractTests(unittest.TestCase):
         self.assertIn("<svg", workflow_svg)
         self.assertIn("GitHub Copilot in SSMS", workflow_svg)
 
+    def test_drawio_html_dimensions_match_exported_svgs(self) -> None:
+        images = {image.get("src", ""): image for image in parse_page().images}
+        for src in (
+            "assets/github-copilot-ssms-context.drawio.svg",
+            "assets/contoso-ai-ssms-azure-architecture.drawio.svg",
+        ):
+            svg = ET.parse(ROOT / src).getroot()
+            intrinsic = (
+                str(int(float(svg.attrib["width"].removesuffix("px")))),
+                str(int(float(svg.attrib["height"].removesuffix("px")))),
+            )
+            declared = (images[src].get("width"), images[src].get("height"))
+            self.assertEqual(declared, intrinsic, src)
+
     def test_drawio_architecture_assets_are_editable_and_attributed(self) -> None:
         page = read_page()
         for name, labels in (
